@@ -1,173 +1,220 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, LogIn, AlertCircle, Sparkles } from 'lucide-react';
+import { LogIn, Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react';
+import Navbar from '../components/Navbar';
 
-export const Login = () => {
-  const { login } = useAuth();
+const Login = () => {
+  const { login, error: authError } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+  });
+
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Quick credentials helper for tester convenience
-  const MOCK_CREDENTIALS = [
-    { label: 'Citizen', email: 'citizen@urbanpulse.gov', password: 'password123' },
-    { label: 'Officer', email: 'officer@urbanpulse.gov', password: 'password123' },
-    { label: 'Senior Officer', email: 'senior@urbanpulse.gov', password: 'password123' },
-    { label: 'Admin', email: 'admin@urbanpulse.gov', password: 'password123' }
-  ];
-
-  const handleQuickSelect = (cred) => {
-    setEmail(cred.email);
-    setPassword(cred.password);
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
     setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('Please fill in all fields');
+    if (!formData.username || !formData.password) {
+      setError('Please fill in all fields.');
       return;
     }
 
     setLoading(true);
     setError('');
+
     try {
-      await login(email, password);
-      // Auth success is handled by redirect in AppRoutes/ProtectedRoutes
-      navigate('/dashboard');
+      const user = await login(formData.username, formData.password);
+      if (user.role === 'Citizen') navigate('/citizen/dashboard');
+      else if (user.role === 'Officer') navigate('/officer/dashboard');
+      else if (user.role === 'Senior Officer') navigate('/senior-officer/dashboard');
+      else if (user.role === 'Admin') navigate('/admin/dashboard');
+      else navigate('/public-complaints');
     } catch (err) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      setError(err.message || 'Login failed. Please verify credentials.');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleQuickFill = (roleName) => {
+    let username = '';
+    switch(roleName) {
+      case 'Citizen': username = 'citizen_user'; break;
+      case 'Officer': username = 'officer_dept'; break;
+      case 'Senior Officer': username = 'senior_dept'; break;
+      case 'Admin': username = 'admin_system'; break;
+    }
+    setFormData({
+      username: username,
+      password: 'password123'
+    });
+  };
+
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col md:flex-row bg-slate-50">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Decorative clean ambient background grids */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-35 z-0" />
       
-      {/* Left Pane: Branding & Info */}
-      <div className="md:w-1/2 bg-govdark-900 text-white p-8 md:p-16 flex flex-col justify-between relative overflow-hidden">
-        {/* Glow Effects */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-brand-500/10 rounded-full filter blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-500/10 rounded-full filter blur-3xl" />
-
-        <div className="space-y-4 relative z-10">
-          <span className="px-3 py-1 bg-brand-500/20 text-brand-300 border border-brand-500/30 rounded-full text-xs font-bold uppercase tracking-wider">
-            Government Tech Portal
-          </span>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
-            Connecting citizens <br />
-            with local <span className="text-brand-400">administration</span>.
-          </h1>
-          <p className="text-slate-400 text-sm md:text-base max-w-md">
-            UrbanPulse helps you report civic issues like road damage, pipeline leaks, and electrical blackouts directly to responsible department officers.
-          </p>
-        </div>
-
-        <div className="mt-12 md:mt-0 relative z-10 space-y-6">
-          <div className="border-l-4 border-brand-500 pl-4 space-y-1">
-            <h4 className="font-bold text-sm">Automated Severity Routing</h4>
-            <p className="text-xs text-slate-400">Complaints are mathematically prioritized using priority routing, keeping urgent matters first.</p>
-          </div>
-          <div className="border-l-4 border-emerald-500 pl-4 space-y-1">
-            <h4 className="font-bold text-sm">Transparency in Tracking</h4>
-            <p className="text-xs text-slate-400">Upvote civic complaints raised by neighbors, monitor resolving progress, and view officer evidence photos.</p>
+      <Navbar showMenuButton={false} />
+      
+      <div className="sm:mx-auto sm:w-full sm:max-w-md z-10 animate-fade-in">
+        <div className="flex justify-center mb-4">
+          <div className="bg-accent-500 p-3 rounded-2xl text-white flex items-center justify-center shadow-lg shadow-accent-500/20">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <path d="M12 8v4" />
+              <path d="M12 16h.01" />
+            </svg>
           </div>
         </div>
-
-        <div className="text-xs text-slate-500 relative z-10 mt-6">
-          &copy; 2026 Department of Urban Planning & Municipal Corporation.
-        </div>
+        <h2 className="text-center text-2xl font-extrabold text-slate-900 tracking-tight">
+          Welcome to UrbanPulse
+        </h2>
+        <p className="mt-1.5 text-center text-xs text-slate-400 font-bold uppercase tracking-wider">
+          Smart City Service Gateway
+        </p>
       </div>
 
-      {/* Right Pane: Login Form */}
-      <div className="md:w-1/2 p-8 md:p-16 flex items-center justify-center">
-        <div className="w-full max-w-md space-y-8 bg-white p-8 border border-slate-100 rounded-3xl shadow-xl">
-          <div className="space-y-2">
-            <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Access UrbanPulse Portal</h2>
-            <p className="text-xs text-slate-500 font-medium">Log in to raise, assign, or resolve civic complaints.</p>
-          </div>
+      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md px-4 z-10 animate-fade-in">
+        <div className="bg-white py-8 px-6 sm:px-10 rounded-2xl border border-slate-200 shadow-xl space-y-6">
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            {/* Display Errors */}
+            {(error || authError) && (
+              <div className="p-3.5 bg-rose-50 border border-rose-100 rounded-xl text-xs font-semibold text-rose-600">
+                {error || authError}
+              </div>
+            )}
 
-          {error && (
-            <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-start space-x-2.5 text-rose-700 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Email Address</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            {/* Username */}
+            <div>
+              <label htmlFor="username" className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-2">
+                Username or Email
+              </label>
+              <div className="relative rounded-xl shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <User className="h-4.5 w-4.5 stroke-[2.5]" />
+                </div>
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@municipal.gov"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-50"
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
                   required
+                  value={formData.username}
+                  onChange={handleChange}
+                  placeholder="Enter username"
+                  className="block w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 focus:bg-white transition-all font-medium"
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Password</label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            {/* Password */}
+            <div>
+              <label htmlFor="password" className="block text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-2">
+                Password
+              </label>
+              <div className="relative rounded-xl shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Lock className="h-4.5 w-4.5 stroke-[2.5]" />
+                </div>
                 <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-50"
-                  required
+                  className="block w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 focus:bg-white transition-all font-medium"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-650 focus:outline-none"
+                >
+                  {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+                </button>
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-slate-300 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2"
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  <LogIn className="w-4 h-4" />
-                  <span>Log In Securely</span>
-                </>
-              )}
-            </button>
+            {/* Submit button */}
+            <div className="pt-1.5">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex justify-center items-center py-2.5 px-4 bg-accent-600 hover:bg-accent-700 disabled:bg-accent-500/50 text-white font-bold text-sm rounded-xl shadow-md shadow-accent-600/10 active:scale-[0.98] focus:outline-none transition-all"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin h-4.5 w-4.5 mr-2" />
+                    Authenticating...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="h-4.5 w-4.5 mr-2 stroke-[2.5]" />
+                    Sign In
+                  </>
+                )}
+              </button>
+            </div>
           </form>
 
-          {/* Tester Helper UI */}
-          <div className="pt-6 border-t border-slate-100 space-y-3">
-            <div className="flex items-center space-x-1.5 text-xs font-bold text-brand-600">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-              <span>Developer Quick Links (Pre-fill Form)</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {MOCK_CREDENTIALS.map((cred) => (
-                <button
-                  key={cred.label}
-                  onClick={() => handleQuickSelect(cred)}
-                  className="p-2 border border-slate-200 hover:border-brand-500 hover:bg-brand-50/20 rounded-xl text-[10px] font-bold text-slate-600 hover:text-brand-700 transition"
-                >
-                  {cred.label}
-                </button>
-              ))}
+          {/* Quick Fill Panel */}
+          <div className="border-t border-slate-100 pt-5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 text-center">
+              Testing Credentials (Click to Auto-fill)
+            </p>
+            <div className="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-600">
+              <button 
+                type="button"
+                onClick={() => handleQuickFill('Citizen')}
+                className="p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl text-center transition-colors active:scale-95"
+              >
+                Citizen User
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleQuickFill('Officer')}
+                className="p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl text-center transition-colors active:scale-95"
+              >
+                Dept Officer
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleQuickFill('Senior Officer')}
+                className="p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl text-center transition-colors active:scale-95"
+              >
+                Senior Officer
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleQuickFill('Admin')}
+                className="p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 rounded-xl text-center transition-colors active:scale-95"
+              >
+                Admin System
+              </button>
             </div>
           </div>
 
-          <div className="text-center text-xs text-slate-500">
-            Don't have a citizen account?{' '}
-            <Link to="/register" className="font-bold text-brand-600 hover:underline">
-              Create an account
+          {/* Register Link */}
+          <div className="text-center text-xs font-bold text-slate-450 border-t border-slate-100 pt-4">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-accent-600 hover:text-accent-700 hover:underline">
+              Create an account &rarr;
             </Link>
           </div>
         </div>
@@ -175,4 +222,5 @@ export const Login = () => {
     </div>
   );
 };
+
 export default Login;

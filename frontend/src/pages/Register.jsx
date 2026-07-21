@@ -1,36 +1,57 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
-import { User, Mail, Lock, UserPlus, AlertCircle, Phone, MapPin } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react';
+import Navbar from '../components/Navbar';
 
-export const Register = () => {
-  const { register } = useAuth();
+const Register = () => {
+  const { register, error: authError } = useAuth();
   const navigate = useNavigate();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
-  const [ward, setWard] = useState('Ward 4 - Jayanagar');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+    setError('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name || !email || !password || !phone) {
-      setError('Please fill in all fields');
+    const { username, email, password, confirmPassword } = formData;
+
+    if (!username || !email || !password || !confirmPassword) {
+      setError('All fields are required.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long.');
       return;
     }
 
     setLoading(true);
     setError('');
-    setSuccess('');
+
     try {
-      await register(name, email, password, { phone, ward });
-      setSuccess('Account created successfully! Redirecting to login...');
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      await register(username, email, password);
+      navigate('/login');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -39,151 +60,162 @@ export const Register = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col md:flex-row bg-slate-50">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Decorative ambient background grid */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-35 z-0" />
       
-      {/* Left Pane (Branding & Description) */}
-      <div className="md:w-1/2 bg-govdark-900 text-white p-8 md:p-16 flex flex-col justify-between relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-brand-500/10 rounded-full filter blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-500/10 rounded-full filter blur-3xl" />
-
-        <div className="space-y-4 relative z-10">
-          <span className="px-3 py-1 bg-brand-500/20 text-brand-300 border border-brand-500/30 rounded-full text-xs font-bold uppercase tracking-wider">
-            Citizen Registration
-          </span>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
-            Be the change <br />
-            in your <span className="text-brand-400">community</span>.
-          </h1>
-          <p className="text-slate-400 text-sm md:text-base max-w-md">
-            Create an account to report garbage overflow, damaged sewers, structural road cracks, and other local issues. Gain transparent tracking updates and vote on neighboring civic concerns.
-          </p>
+      <Navbar showMenuButton={false} />
+      
+      <div className="sm:mx-auto sm:w-full sm:max-w-md z-10 animate-fade-in">
+        <div className="flex justify-center mb-4">
+          <div className="bg-accent-500 p-3 rounded-2xl text-white flex items-center justify-center shadow-lg shadow-accent-500/20">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <path d="M12 8v4" />
+              <path d="M12 16h.01" />
+            </svg>
+          </div>
         </div>
-
-        <div className="text-xs text-slate-500 relative z-10 mt-12 md:mt-0">
-          &copy; 2026 Department of Urban Planning & Municipal Corporation.
-        </div>
+        <h2 className="text-center text-2xl font-extrabold text-slate-900 tracking-tight">
+          Create Account
+        </h2>
+        <p className="mt-1.5 text-center text-xs text-slate-400 font-bold uppercase tracking-wider">
+          Join the Smart Civic Network
+        </p>
       </div>
 
-      {/* Right Pane (Registration Form) */}
-      <div className="md:w-1/2 p-8 md:p-16 flex items-center justify-center">
-        <div className="w-full max-w-md space-y-8 bg-white p-8 border border-slate-100 rounded-3xl shadow-xl">
-          <div className="space-y-2">
-            <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Create Citizen Profile</h2>
-            <p className="text-xs text-slate-500 font-medium">Join the UrbanPulse platform to file and track municipal complaints.</p>
-          </div>
+      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md px-4 z-10 animate-fade-in">
+        <div className="bg-white py-8 px-6 sm:px-10 rounded-2xl border border-slate-200 shadow-xl space-y-6">
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            {/* Display Errors */}
+            {(error || authError) && (
+              <div className="p-3.5 bg-rose-50 border border-rose-100 rounded-xl text-xs font-semibold text-rose-600">
+                {error || authError}
+              </div>
+            )}
 
-          {error && (
-            <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-start space-x-2.5 text-rose-700 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {success && (
-            <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-800 text-xs font-medium">
-              {success}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Full Name</label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            {/* Username */}
+            <div>
+              <label htmlFor="username" className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-1.5">
+                Username
+              </label>
+              <div className="relative rounded-xl shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <User className="h-4.5 w-4.5 stroke-[2.5]" />
+                </div>
                 <input
+                  id="username"
+                  name="username"
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Rahul Sharma"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-50"
                   required
+                  value={formData.username}
+                  onChange={handleChange}
+                  placeholder="Choose a username"
+                  className="block w-full pl-10 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-transparent focus:bg-white transition-all font-medium"
                 />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Email Address</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className="block text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-1.5">
+                Email Address
+              </label>
+              <div className="relative rounded-xl shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Mail className="h-4.5 w-4.5 stroke-[2.5]" />
+                </div>
                 <input
+                  id="email"
+                  name="email"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="rahul@gmail.com"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-50"
                   required
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="you@smartcity.gov"
+                  className="block w-full pl-10 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-transparent focus:bg-white transition-all font-medium"
                 />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mobile Number</label>
-              <div className="relative">
-                <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            {/* Password */}
+            <div>
+              <label htmlFor="password" className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-1.5">
+                Password
+              </label>
+              <div className="relative rounded-xl shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Lock className="h-4.5 w-4.5 stroke-[2.5]" />
+                </div>
                 <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-50"
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Minimum 6 characters"
+                  className="block w-full pl-10 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-transparent focus:bg-white transition-all font-medium"
                 />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Preferred Ward</label>
-              <div className="relative">
-                <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <select
-                  value={ward}
-                  onChange={(e) => setWard(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-50 appearance-none"
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-650 focus:outline-none"
                 >
-                  <option>Ward 4 - Jayanagar</option>
-                  <option>Ward 5 - HSR Layout</option>
-                  <option>Ward 12 - Indiranagar</option>
-                  <option>Ward 18 - Malleshwaram</option>
-                </select>
+                  {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+                </button>
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Create Password</label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            {/* Confirm Password */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-1.5">
+                Confirm Password
+              </label>
+              <div className="relative rounded-xl shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Lock className="h-4.5 w-4.5 stroke-[2.5]" />
+                </div>
                 <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Min. 8 characters"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-50"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showPassword ? 'text' : 'password'}
                   required
-                  minLength={8}
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Repeat password"
+                  className="block w-full pl-10 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-transparent focus:bg-white transition-all font-medium"
                 />
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-slate-300 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2 mt-2"
-            >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  <UserPlus className="w-4 h-4" />
-                  <span>Register Profile</span>
-                </>
-              )}
-            </button>
+            {/* Submit button */}
+            <div className="pt-3">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex justify-center items-center py-2.5 px-4 bg-accent-600 hover:bg-accent-700 disabled:bg-accent-500/50 text-white font-bold text-sm rounded-xl shadow-md shadow-accent-600/10 active:scale-[0.98] focus:outline-none transition-all"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin h-4.5 w-4.5 mr-2" />
+                    Registering...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="h-4.5 w-4.5 mr-2 stroke-[2.5]" />
+                    Register Account
+                  </>
+                )}
+              </button>
+            </div>
           </form>
 
-          <div className="text-center text-xs text-slate-500">
-            Already registered?{' '}
-            <Link to="/login" className="font-bold text-brand-600 hover:underline">
-              Log In here
+          {/* Login Link */}
+          <div className="text-center text-xs font-bold text-slate-450 border-t border-slate-100 pt-4">
+            Already have an account?{' '}
+            <Link to="/login" className="text-accent-600 hover:text-accent-700 hover:underline">
+              Sign In &rarr;
             </Link>
           </div>
         </div>
@@ -191,4 +223,5 @@ export const Register = () => {
     </div>
   );
 };
+
 export default Register;

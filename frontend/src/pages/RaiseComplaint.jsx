@@ -1,47 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { complaintService } from '../services/api';
-import { MapPin, Upload, FileImage, Sparkles, CheckCircle2, ChevronRight } from 'lucide-react';
+import { complaintService, adminService } from '../services/api';
+import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
 import Map from '../components/Map';
+import { Upload, Send, MapPin, AlertCircle, Loader2, Image } from 'lucide-react';
 
-export const RaiseComplaint = () => {
+const RaiseComplaint = () => {
   const navigate = useNavigate();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [department, setDepartment] = useState('Roads & Traffic');
-  const [address, setAddress] = useState('');
-  const [lat, setLat] = useState(12.9716); // Default centers
-  const [lng, setLng] = useState(77.5946);
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [departments, setDepartments] = useState([]); // fetched from backend: [{id, name}, ...]
 
-  // Default coordinate centers for municipal zones
-  const WARD_CENTERS = {
-    'Roads & Traffic': [12.9716, 77.5946],
-    'Water & Sewage': [12.9105, 77.6450],
-    'Electricity & Lighting': [12.9250, 77.5897],
-    'Waste Management': [12.9784, 77.6408],
-    'Transport & Transit': [12.9562, 77.7020]
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    department: '', // holds a department ID - the backend's Department is a real FK, not free text
+    location_name: '',
+    lat: 12.9716, 
+    lng: 77.5946,
+  });
+
+  useEffect(() => {
+    adminService.getDepartments()
+      .then((depts) => {
+        setDepartments(depts);
+        if (depts.length > 0) {
+          setFormData((prev) => ({ ...prev, department: String(depts[0].id) }));
+        }
+      })
+      .catch(() => setError('Could not load departments from the server. Please refresh and try again.'));
+  }, []);
+
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
-  const departments = ['Roads & Traffic', 'Water & Sewage', 'Electricity & Lighting', 'Waste Management', 'Transport & Transit'];
-
-  const handleDepartmentChange = (e) => {
-    const dept = e.target.value;
-    setDepartment(dept);
-    // Auto-center map on mock zone centroid
-    if (WARD_CENTERS[dept]) {
-      setLat(WARD_CENTERS[dept][0]);
-      setLng(WARD_CENTERS[dept][1]);
-    }
-  };
-
-  const handleMapSelect = (newLat, newLng) => {
-    setLat(newLat);
-    setLng(newLng);
-    setAddress(`Geocoded Coordinates: ${newLat.toFixed(5)}, ${newLng.toFixed(5)}`);
+  const handleLocationSelect = ({ lat, lng }) => {
+    setFormData((prev) => ({
+      ...prev,
+      lat,
+      lng
+    }));
   };
 
   const handleImageChange = (e) => {
@@ -58,206 +65,232 @@ export const RaiseComplaint = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !description || !address || !lat || !lng) {
-      setError('Please fill in all required fields and pick a map location');
+    if (!formData.title || !formData.description || !formData.location_name) {
+      setError('Please fill in all required fields.');
       return;
     }
 
-    setSubmitting(true);
+    setLoading(true);
     setError('');
 
-    try {
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('department', department);
-      formData.append('address', address);
-      formData.append('lat', lat.toString());
-      formData.append('lng', lng.toString());
-      if (imageFile) {
-        formData.append('image', imageFile);
-      }
+    const data = new FormData();
+    data.append('title', formData.title);
+    data.append('description', formData.description);
+    data.append('department', formData.department);
+    data.append('location_name', formData.location_name);
+    data.append('lat', formData.lat);
+    data.append('lng', formData.lng);
+    
+    if (imageFile) {
+      data.append('image', imageFile);
+    }
 
-      await complaintService.createComplaint(formData);
-      navigate('/dashboard');
+    try {
+      await complaintService.createComplaint(data);
+      navigate('/citizen/dashboard');
     } catch (err) {
-      setError(err.message || 'Failed to submit complaint. Please check your inputs.');
+      setError(err.message || 'Failed to submit your complaint. Please check your details and try again.');
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)] overflow-hidden bg-slate-50">
-      
-      {/* Left Pane: Submission Form */}
-      <div className="w-full lg:w-1/2 overflow-y-auto p-6 space-y-6 flex flex-col justify-between">
-        <div className="space-y-5">
+    <div className="min-h-screen bg-slate-50 flex">
+      <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <Sidebar isOpen={sidebarOpen} onCloseSideBar={() => setSidebarOpen(false)} />
+
+      <main className="flex-1 md:pl-64 pt-16 min-h-screen">
+        <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6 animate-fade-in">
           {/* Header */}
-          <div className="space-y-1.5">
-            <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">File Civic Incident</h1>
-            <p className="text-xs text-slate-500 font-medium">Please provide accurate description and photos. Select location using the map on the right.</p>
+          <div className="border-b border-slate-200 pb-5">
+            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Report Civic Issue</h2>
+            <p className="text-sm text-slate-500 font-medium mt-1">
+              Provide specific details, tag the municipal department, pin the location on the map, and submit evidence.
+            </p>
           </div>
 
-          {error && (
-            <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-700 text-xs font-semibold">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            
-            {/* Title */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Complaint Title</label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Open manhole on main road, Broken street lamp"
-                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50 transition"
-                required
-              />
-            </div>
-
-            {/* Description */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Detailed Description</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Provide details about the issue (how long it has been present, size of impact, etc.)"
-                rows={3}
-                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50 transition"
-                required
-              />
-            </div>
-
-            {/* Department selector */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Department Category</label>
-              <select
-                value={department}
-                onChange={handleDepartmentChange}
-                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50 transition"
-              >
-                {departments.map(dept => (
-                  <option key={dept} value={dept}>{dept}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Address */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Landmark / Street Address</label>
-              <div className="relative">
-                <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="e.g. Next to HDFC ATM, 5th Cross Corner"
-                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-50 transition"
-                  required
-                />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="p-4 bg-rose-50 border border-rose-100 rounded-xl flex items-center space-x-2 text-xs font-semibold text-rose-600">
+                <AlertCircle className="h-5 w-5 flex-shrink-0 stroke-[2.5]" />
+                <span>{error}</span>
               </div>
-            </div>
+            )}
 
-            {/* Lat / Lng (readonly but updated by map) */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Latitude (Map Pinned)</label>
-                <input
-                  type="number"
-                  value={lat.toFixed(5)}
-                  readOnly
-                  className="w-full px-4 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs outline-none text-slate-500 font-mono"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Longitude (Map Pinned)</label>
-                <input
-                  type="number"
-                  value={lng.toFixed(5)}
-                  readOnly
-                  className="w-full px-4 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs outline-none text-slate-500 font-mono"
-                />
-              </div>
-            </div>
-
-            {/* Image upload */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Upload Incident Photo</label>
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl text-xs font-semibold cursor-pointer text-slate-600 transition shadow-sm">
-                  <Upload className="w-4 h-4 text-slate-400" />
-                  <span>Choose Photo</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Form Side */}
+              <div className="md:col-span-2 space-y-5 bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+                {/* Title */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-2">
+                    Complaint Title <span className="text-rose-500">*</span>
+                  </label>
                   <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
+                    type="text"
+                    name="title"
+                    required
+                    value={formData.title}
+                    onChange={handleChange}
+                    placeholder="e.g. Severe drainage overflow near community library entrance"
+                    className="premium-input"
                   />
-                </label>
-                {imageFile && (
-                  <span className="text-xs text-slate-500 font-medium truncate flex items-center gap-1.5">
-                    <FileImage className="w-4 h-4 text-brand-500 shrink-0" />
-                    {imageFile.name}
-                  </span>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-2">
+                    Detailed Description <span className="text-rose-500">*</span>
+                  </label>
+                  <textarea
+                    rows={5}
+                    name="description"
+                    required
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder="Please explain the details of the problem, when it was noticed, and how it is affecting locals..."
+                    className="premium-input resize-none leading-relaxed"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Department */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-2">
+                      Target Department <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      name="department"
+                      value={formData.department}
+                      onChange={handleChange}
+                      className="block w-full py-2.5 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 focus:bg-white transition-all font-semibold outline-none cursor-pointer"
+                    >
+                      {departments.length === 0 && <option value="">Loading departments...</option>}
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>{dept.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Location Landmark */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-2">
+                      Area Landmark / Location <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="location_name"
+                      required
+                      value={formData.location_name}
+                      onChange={handleChange}
+                      placeholder="e.g. Community library West Lane gate"
+                      className="premium-input"
+                    />
+                  </div>
+                </div>
+
+                {/* File Upload */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-2">
+                    Evidence Image
+                  </label>
+                  <div className="mt-1 flex justify-center px-6 pt-5.5 pb-6 border-2 border-slate-200 border-dashed rounded-2xl hover:border-accent-500 transition-colors bg-slate-50/50 cursor-pointer">
+                    <div className="space-y-1 text-center">
+                      <Upload className="mx-auto h-10 w-10 text-slate-400 stroke-[1.5] mb-2" />
+                      <div className="flex text-xs text-slate-500 font-bold select-none justify-center">
+                        <label className="relative cursor-pointer bg-transparent text-accent-600 hover:text-accent-700 focus-within:outline-none">
+                          <span>Upload photo evidence</span>
+                          <input 
+                            type="file" 
+                            name="image"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="sr-only" 
+                          />
+                        </label>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">PNG, JPG up to 5MB</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Map & Meta Info */}
+              <div className="space-y-6">
+                {/* Location Picker */}
+                <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="h-5 w-5 text-accent-500 stroke-[2.5]" />
+                    <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider">Pinpoint Coordinates</h4>
+                  </div>
+                  <p className="text-[11px] text-slate-400 font-semibold leading-normal">
+                    Click anywhere on the map to place a precise location pin.
+                  </p>
+                  
+                  <Map 
+                    selectable={true}
+                    selectedLocation={{ lat: formData.lat, lng: formData.lng }}
+                    onLocationSelect={handleLocationSelect}
+                    height="240px"
+                  />
+
+                  {/* Lat Lng display */}
+                  <div className="grid grid-cols-2 gap-2 text-center text-xs font-bold text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-100 select-none">
+                    <div>
+                      <p className="text-[9px] text-slate-400 uppercase tracking-wide">Latitude</p>
+                      <p className="mt-0.5 font-sans">{formData.lat}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-slate-400 uppercase tracking-wide">Longitude</p>
+                      <p className="mt-0.5 font-sans">{formData.lng}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Upload Image Preview */}
+                {imagePreview && (
+                  <div className="bg-white border border-slate-200 p-4.5 rounded-2xl shadow-sm text-center animate-fade-in select-none">
+                    <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider mb-3">Evidence Preview</p>
+                    <div className="aspect-video w-full rounded-xl overflow-hidden bg-slate-50 border border-slate-200">
+                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
 
-            {/* Image preview */}
-            {imagePreview && (
-              <div className="relative w-28 h-28 border border-slate-200 rounded-xl overflow-hidden shadow-inner">
-                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => { setImageFile(null); setImagePreview(null); }}
-                  className="absolute top-1 right-1 bg-slate-800/80 hover:bg-slate-900 text-white rounded-full p-1 text-[8px] leading-none"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-slate-300 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2"
-            >
-              {submitting ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Submit Incident Report</span>
-                </>
-              )}
-            </button>
-
+            {/* Action Bar */}
+            <div className="flex justify-end space-x-3 border-t border-slate-200 pt-6">
+              <button
+                type="button"
+                onClick={() => navigate('/citizen/dashboard')}
+                className="px-5 py-2.5 border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 font-bold text-xs rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex items-center px-6 py-2.5 bg-accent-600 hover:bg-accent-700 disabled:bg-accent-500/50 text-white font-bold text-xs rounded-xl shadow-md shadow-accent-600/10 active:scale-95 transition-all outline-none"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                    Filing report...
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2 stroke-[2.5]" />
+                    File Report
+                  </>
+                )}
+              </button>
+            </div>
           </form>
         </div>
-      </div>
-
-      {/* Right Pane: Map Picker */}
-      <div className="w-full lg:w-1/2 h-80 lg:h-full relative">
-        <div className="absolute top-4 left-4 z-[400] bg-white border border-slate-100 p-3 rounded-xl shadow-md text-xs font-semibold text-slate-700 flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-brand-500 animate-pulse" />
-          <span>Click anywhere on the map to pin incident location</span>
-        </div>
-        <Map
-          mode="select"
-          center={[lat, lng]}
-          zoom={13}
-          selectedLocation={{ lat, lng }}
-          onLocationSelect={handleMapSelect}
-        />
-      </div>
-
+      </main>
     </div>
   );
 };
+
 export default RaiseComplaint;

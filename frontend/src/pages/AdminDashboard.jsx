@@ -1,379 +1,347 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../services/api';
-import { 
-  Building2, Users, UserSquare2, Plus, 
-  Settings, FolderKanban, ShieldCheck, Mail, Check, AlertCircle 
-} from 'lucide-react';
-import { Loading } from '../components/Loading';
+import { useAuth } from '../context/AuthContext';
+import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
+import Loading from '../components/Loading';
+import Error from '../components/Error';
+import { Building2, Users, UserCog, Plus, ShieldAlert, Calendar, CheckSquare, ListTodo, Check } from 'lucide-react';
 
-export const AdminDashboard = () => {
-  const [departments, setDepartments] = useState([]);
-  const [officers, setOfficers] = useState([]);
-  const [users, setUsers] = useState([]);
+const AdminDashboard = () => {
+  const { user } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   
-  const [activeTab, setActiveTab] = useState('depts'); // depts, officers, users
-  
-  // Form states
-  const [newDeptName, setNewDeptName] = useState('');
-  const [newOfficerName, setNewOfficerName] = useState('');
-  const [newOfficerEmail, setNewOfficerEmail] = useState('');
-  const [newOfficerDept, setNewOfficerDept] = useState('');
-  const [newOfficerRole, setNewOfficerRole] = useState('Officer'); // Officer, Senior Officer
-  
-  const [formError, setFormError] = useState('');
-  const [formSuccess, setFormSuccess] = useState('');
-  const [formSubmitting, setFormSubmitting] = useState(false);
+  const [departments, setDepartments] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [activeTab, setActiveTab] = useState('Departments');
 
-  const fetchData = async () => {
+  // New Department Form State
+  const [newDeptName, setNewDeptName] = useState('');
+  const [newDeptHead, setNewDeptHead] = useState('');
+  const [submittingDept, setSubmittingDept] = useState(false);
+
+  const fetchAdminData = async () => {
     setLoading(true);
+    setError('');
     try {
-      const depts = await adminService.getDepartments();
-      const offs = await adminService.getOfficers();
-      const usrs = await adminService.getUsers();
-      
-      setDepartments(depts);
-      setOfficers(offs);
-      setUsers(usrs);
-      if (depts.length > 0 && !newOfficerDept) {
-        setNewOfficerDept(depts[0]);
-      }
-    } catch (error) {
-      console.error('Failed to load admin data:', error);
+      const deptsData = await adminService.getDepartments();
+      const usersData = await adminService.getUsers();
+      setDepartments(deptsData);
+      setUsers(usersData);
+    } catch (err) {
+      setError(err.message || 'Failed to load admin data. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchAdminData();
   }, []);
 
-  const handleAddDept = async (e) => {
+  const handleCreateDept = async (e) => {
     e.preventDefault();
-    if (!newDeptName.trim()) return;
-    setFormSubmitting(true);
-    setFormError('');
-    setFormSuccess('');
+    if (!newDeptName || !newDeptHead) return;
+    setSubmittingDept(true);
+
     try {
-      const updatedDepts = await adminService.addDepartment(newDeptName.trim());
-      setDepartments(updatedDepts);
+      const added = await adminService.createDepartment({ name: newDeptName, head: newDeptHead });
+      setDepartments((prev) => [...prev, { ...added, head: newDeptHead }]);
       setNewDeptName('');
-      setFormSuccess('Department added successfully!');
+      setNewDeptHead('');
+      alert('Department created successfully!');
     } catch (err) {
-      setFormError(err.message || 'Failed to add department');
+      alert(err.message || 'Failed to create department. Please try again.');
     } finally {
-      setFormSubmitting(false);
+      setSubmittingDept(false);
     }
   };
 
-  const handleAddOfficer = async (e) => {
-    e.preventDefault();
-    if (!newOfficerName || !newOfficerEmail || !newOfficerDept) {
-      setFormError('Please fill in all fields');
-      return;
+  const handleRoleChange = async (userId, targetRole) => {
+    let payload = { role: targetRole };
+
+    if (targetRole === 'Officer' || targetRole === 'Senior Officer') {
+      if (departments.length === 0) {
+        alert('No departments exist yet. Create a department first before assigning officers.');
+        return;
+      }
+      const deptOptions = departments.map((d) => `${d.id}: ${d.name}`).join('\n');
+      const deptInput = window.prompt(`Assign to which department? Enter the department ID:\n${deptOptions}`);
+      const deptId = parseInt(deptInput, 10);
+      if (!deptInput || !departments.some((d) => d.id === deptId)) {
+        alert('Officer assignment cancelled - a valid department ID is required.');
+        return;
+      }
+      const designation = window.prompt('Enter a designation/title for this officer (e.g. "Field Inspector"):');
+      if (!designation) {
+        alert('Officer assignment cancelled - a designation is required.');
+        return;
+      }
+      payload = { role: targetRole, department: deptId, designation };
     }
-    setFormSubmitting(true);
-    setFormError('');
-    setFormSuccess('');
+
     try {
-      const newOff = await adminService.addOfficer({
-        name: newOfficerName,
-        email: newOfficerEmail,
-        department: newOfficerDept,
-        role: newOfficerRole
-      });
-      setOfficers([...officers, newOff]);
-      setUsers([...users, { ...newOff, password: 'password123' }]);
-      setNewOfficerName('');
-      setNewOfficerEmail('');
-      setFormSuccess('Officer registered successfully!');
+      await adminService.updateUserRole(userId, payload);
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, role: targetRole } : u))
+      );
     } catch (err) {
-      setFormError(err.message || 'Failed to add officer');
-    } finally {
-      setFormSubmitting(false);
+      alert(err.message || 'Failed to update role. Please try again.');
     }
   };
 
-  const tabs = [
-    { id: 'depts', label: 'Manage Departments', icon: Building2 },
-    { id: 'officers', label: 'Department Officers', icon: UserSquare2 },
-    { id: 'users', label: 'User Directory', icon: Users }
-  ];
+  const getGreeting = () => {
+    const hr = new Date().getHours();
+    if (hr < 12) return 'Good Morning';
+    if (hr < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  const currentFormattedDate = new Date().toLocaleDateString(undefined, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">System Administration</h1>
-        <p className="text-xs text-slate-500 font-medium">Manage departmental structures, assign field officers, and audit system users.</p>
-      </div>
+    <div className="min-h-screen bg-slate-50 flex">
+      <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <Sidebar isOpen={sidebarOpen} onCloseSideBar={() => setSidebarOpen(false)} />
 
-      {/* Tabs Selectors */}
-      <div className="flex border-b border-slate-200 gap-4 overflow-x-auto">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setFormError('');
-                setFormSuccess('');
-              }}
-              className={`flex items-center gap-2 py-3 px-2 border-b-2 font-bold text-xs uppercase tracking-wider transition-all whitespace-nowrap ${
-                isActive 
-                  ? 'border-brand-500 text-brand-600' 
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Alert Banner */}
-      {(formSuccess || formError) && (
-        <div className={`p-4 rounded-2xl flex items-start space-x-2 text-xs font-semibold max-w-xl ${
-          formSuccess ? 'bg-emerald-50 border border-emerald-100 text-emerald-800' : 'bg-rose-50 border border-rose-100 text-rose-800'
-        }`}>
-          {formSuccess ? <Check className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
-          <span>{formSuccess || formError}</span>
-        </div>
-      )}
-
-      {loading ? (
-        <Loading text="Loading administrative catalog..." />
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* LEFT/MAIN PANE: Table Lists (2 Cols) */}
-          <div className="lg:col-span-2 space-y-4">
+      <main className="flex-1 md:pl-64 pt-16 min-h-screen">
+        <div className="p-6 md:p-8 max-w-7xl w-full mx-auto space-y-8 animate-fade-in">
+          {/* Welcoming Header Panel */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-6">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                {getGreeting()}, {user?.username || 'Administrator'} 👋
+              </h2>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Here's what's happening across your city today.
+              </p>
+            </div>
             
-            {/* TAB 1: DEPARTMENTS LIST */}
-            {activeTab === 'depts' && (
-              <div className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Active Departments</span>
-                  <span className="text-[10px] bg-slate-200 text-slate-600 font-bold px-2 py-0.5 rounded-full">{departments.length} Total</span>
-                </div>
-                <div className="divide-y divide-slate-100">
-                  {departments.map((dept, idx) => (
-                    <div key={dept} className="p-4 flex items-center justify-between hover:bg-slate-50/30 transition text-sm">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-slate-400 font-mono font-semibold">#{(idx + 1).toString().padStart(2, '0')}</span>
-                        <span className="font-bold text-slate-700">{dept}</span>
-                      </div>
-                      <span className="text-[10px] font-bold text-brand-600 bg-brand-50 px-2 py-1 border rounded-md">Municipal Division</span>
+            <div className="flex items-center space-x-3 self-start sm:self-auto">
+              <span className="inline-flex items-center text-[10px] font-bold text-slate-450 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
+                <Calendar className="h-3.5 w-3.5 mr-1.5 text-slate-450 stroke-[2.5]" />
+                {currentFormattedDate}
+              </span>
+            </div>
+          </div>
+
+          {/* Quick Metrics Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 select-none">
+            <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
+              <div className="p-3 bg-slate-50 text-slate-500 rounded-xl border border-slate-100">
+                <Building2 className="h-6 w-6 stroke-[1.5]" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Divisions</p>
+                <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{departments.length}</h3>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
+              <div className="p-3 bg-accent-50 text-accent-700 rounded-xl border border-accent-100">
+                <Users className="h-6 w-6 stroke-[1.5]" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Active Accounts</p>
+                <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{users.length}</h3>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
+              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
+                <CheckSquare className="h-6 w-6 stroke-[1.5]" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Operational Health</p>
+                <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">Optimal</h3>
+              </div>
+            </div>
+          </div>
+
+          {/* Tab Selection */}
+          <div className="flex border-b border-slate-200 select-none">
+            {['Departments', 'User Accounts'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`py-3 px-6 text-xs font-bold transition-all border-b-2 -mb-[2px] ${
+                  activeTab === tab
+                    ? 'border-accent-600 text-accent-700 font-extrabold'
+                    : 'border-transparent text-slate-400 hover:text-slate-655'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Content Loading */}
+          {loading ? (
+            <div className="bg-white border border-slate-200 rounded-2xl p-12">
+              <Loading message="Syncing with central system directory..." />
+            </div>
+          ) : error ? (
+            <Error message={error} onRetry={fetchAdminData} />
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left Column: Tables & registries */}
+              <div className="lg:col-span-2 space-y-6 animate-fade-in">
+                {activeTab === 'Departments' ? (
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-5">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                      <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Department Directory</h3>
+                      <span className="text-[10px] bg-slate-100 border border-slate-200/50 px-2.5 py-0.5 rounded-full text-slate-500 font-bold">{departments.length} division{departments.length !== 1 ? 's' : ''}</span>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {/* TAB 2: OFFICERS DIRECTORY */}
-            {activeTab === 'officers' && (
-              <div className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Registered Officers</span>
-                  <span className="text-[10px] bg-slate-200 text-slate-600 font-bold px-2 py-0.5 rounded-full">{officers.length} Total</span>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-100 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        <th className="p-4 pl-6">Officer Name</th>
-                        <th className="p-4">Email</th>
-                        <th className="p-4">Department Division</th>
-                        <th className="p-4 pr-6 text-right">Role</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {officers.map((o) => (
-                        <tr key={o.email} className="hover:bg-slate-50/30 transition">
-                          <td className="p-4 pl-6 font-bold text-slate-700">{o.name}</td>
-                          <td className="p-4 text-slate-500 font-medium">{o.email}</td>
-                          <td className="p-4">
-                            <span className="px-2 py-0.5 border border-cyan-200 text-cyan-700 bg-cyan-50 rounded-md font-semibold">
-                              {o.department}
+                    <div className="divide-y divide-slate-100">
+                      {departments.map((dept) => (
+                        <div key={dept.id} className="py-3.5 flex items-center justify-between hover:bg-slate-50/40 rounded-xl px-2 -mx-2 transition-colors">
+                          <div className="flex items-start space-x-3.5">
+                            <div className="p-2.5 bg-slate-50 text-slate-500 rounded-xl border border-slate-200/50 flex-shrink-0">
+                              <Building2 className="h-5 w-5 stroke-[1.5]" />
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-extrabold text-slate-800">{dept.name}</h4>
+                              <p className="text-[10px] text-slate-400 font-semibold mt-1">Lead Officer: {dept.head}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="text-right">
+                            <span className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200/50">
+                              {dept.count || 0} active files
                             </span>
-                          </td>
-                          <td className="p-4 pr-6 text-right">
-                            <span className={`px-2 py-0.5 border rounded-full font-semibold ${
-                              o.role === 'Senior Officer' ? 'text-indigo-700 bg-indigo-50 border-indigo-200' : 'text-amber-700 bg-amber-50 border-amber-200'
-                            }`}>
-                              {o.role}
-                            </span>
-                          </td>
-                        </tr>
+                          </div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-5">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                      <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">User Registry</h3>
+                      <span className="text-[10px] bg-slate-100 border border-slate-200/50 px-2.5 py-0.5 rounded-full text-slate-500 font-bold">{users.length} member{users.length !== 1 ? 's' : ''}</span>
+                    </div>
 
-            {/* TAB 3: USER LIST */}
-            {activeTab === 'users' && (
-              <div className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">User Directory</span>
-                  <span className="text-[10px] bg-slate-200 text-slate-600 font-bold px-2 py-0.5 rounded-full">{users.length} Total</span>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-100 bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        <th className="p-4 pl-6">User Name</th>
-                        <th className="p-4">Email</th>
-                        <th className="p-4 pr-6 text-right">Security Role</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {users.map((u) => (
-                        <tr key={u.email} className="hover:bg-slate-50/30 transition">
-                          <td className="p-4 pl-6 font-bold text-slate-700">{u.name}</td>
-                          <td className="p-4 text-slate-500 font-medium">{u.email}</td>
-                          <td className="p-4 pr-6 text-right">
-                            <span className={`px-2 py-0.5 border rounded-full font-semibold ${
-                              u.role === 'Admin' ? 'text-rose-700 bg-rose-50 border-rose-200' :
-                              u.role === 'Senior Officer' ? 'text-indigo-700 bg-indigo-50 border-indigo-200' :
-                              u.role === 'Officer' ? 'text-amber-700 bg-amber-50 border-amber-200' :
-                              'text-teal-700 bg-teal-50 border-teal-200'
-                            }`}>
-                              {u.role}
-                            </span>
-                          </td>
-                        </tr>
+                    <div className="divide-y divide-slate-100">
+                      {users.map((item) => (
+                        <div key={item.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:bg-slate-50/40 rounded-xl px-2 -mx-2 transition-colors">
+                          <div className="flex items-center space-x-3.5">
+                            <div className="h-9 w-9 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 font-extrabold text-xs flex items-center justify-center uppercase">
+                              {item.username.substring(0, 1)}
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-extrabold text-slate-800">{item.username}</h4>
+                              <p className="text-[10px] text-slate-450 font-semibold mt-0.5">{item.email}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-3 self-end sm:self-auto">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Authorization Role</span>
+                            <select
+                              value={item.role}
+                              onChange={(e) => handleRoleChange(item.id, e.target.value)}
+                              className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 cursor-pointer outline-none"
+                            >
+                              <option value="Citizen">Citizen</option>
+                              <option value="Officer">Officer</option>
+                              <option value="Senior Officer">Senior Officer</option>
+                              <option value="Admin">Admin</option>
+                            </select>
+                          </div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
 
-          </div>
+              {/* Right Column: Actions side panel */}
+              <div className="space-y-6 animate-fade-in">
+                {activeTab === 'Departments' ? (
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 space-y-4">
+                    <div className="flex items-center space-x-2 text-accent-700">
+                      <Plus className="h-5 w-5 stroke-[2.5]" />
+                      <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider">Add New Department</h4>
+                    </div>
+                    <p className="text-[11px] text-slate-400 font-semibold leading-normal">
+                      Establish a new municipal administrative division.
+                    </p>
 
-          {/* RIGHT PANE: Action Forms (1 Col) */}
-          <div className="space-y-4">
-            
-            {/* FORM 1: ADD DEPARTMENT */}
-            {activeTab === 'depts' && (
-              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
-                <div className="flex items-center space-x-2 shrink-0">
-                  <FolderKanban className="w-4 h-4 text-brand-500" />
-                  <h3 className="font-extrabold text-slate-800 text-sm">Add New Department</h3>
-                </div>
-                <form onSubmit={handleAddDept} className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Division Name</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Parks & Recreation"
-                      value={newDeptName}
-                      onChange={(e) => setNewDeptName(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-50 transition"
-                      required
-                    />
+                    <form onSubmit={handleCreateDept} className="space-y-4">
+                      {/* Name */}
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Division Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={newDeptName}
+                          onChange={(e) => setNewDeptName(e.target.value)}
+                          placeholder="e.g. Public Parks & Forestry"
+                          className="premium-input"
+                        />
+                      </div>
+
+                      {/* Head */}
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Division Head Officer</label>
+                        <input
+                          type="text"
+                          required
+                          value={newDeptHead}
+                          onChange={(e) => setNewDeptHead(e.target.value)}
+                          placeholder="e.g. Director Sarah Jenkins"
+                          className="premium-input"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={submittingDept}
+                        className="w-full flex justify-center items-center py-2 px-3 bg-accent-600 hover:bg-accent-700 text-white font-bold text-xs rounded-xl shadow-sm hover:shadow active:scale-95 transition-all outline-none"
+                      >
+                        Create Department
+                      </button>
+                    </form>
                   </div>
-                  <button
-                    type="submit"
-                    disabled={formSubmitting}
-                    className="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1 shadow"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Create Department</span>
-                  </button>
-                </form>
+                ) : (
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 space-y-4 select-none">
+                    <div className="flex items-center space-x-2 text-rose-500">
+                      <ShieldAlert className="h-5 w-5 stroke-[2]" />
+                      <h4 className="font-extrabold text-slate-800 text-xs uppercase tracking-wider">Security Profile Guidelines</h4>
+                    </div>
+                    <p className="text-[11px] text-slate-400 font-medium leading-normal">
+                      Upgrading profiles gives users broad administrative accesses over the smart city pipeline.
+                    </p>
+                    <div className="space-y-2 text-[10px] font-bold text-slate-600">
+                      <div className="flex items-center space-x-1.5">
+                        <Check className="h-3.5 w-3.5 text-accent-500" />
+                        <span>Officers manage specific department logs</span>
+                      </div>
+                      <div className="flex items-center space-x-1.5">
+                        <Check className="h-3.5 w-3.5 text-accent-500" />
+                        <span>Seniors audit escalations & delay queues</span>
+                      </div>
+                      <div className="flex items-center space-x-1.5">
+                        <Check className="h-3.5 w-3.5 text-accent-500" />
+                        <span>Admins configure departments & memberships</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-
-            {/* FORM 2: ADD OFFICER */}
-            {activeTab === 'officers' && (
-              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
-                <div className="flex items-center space-x-2 shrink-0">
-                  <ShieldCheck className="w-4 h-4 text-brand-500" />
-                  <h3 className="font-extrabold text-slate-800 text-sm">Register Department Officer</h3>
-                </div>
-                <form onSubmit={handleAddOfficer} className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Officer Name</label>
-                    <input
-                      type="text"
-                      placeholder="Officer Meera Sen"
-                      value={newOfficerName}
-                      onChange={(e) => setNewOfficerName(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:bg-white focus:border-brand-500 transition"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email Address</label>
-                    <input
-                      type="email"
-                      placeholder="meera.water@urbanpulse.gov"
-                      value={newOfficerEmail}
-                      onChange={(e) => setNewOfficerEmail(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:bg-white focus:border-brand-500 transition"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assign Division</label>
-                    <select
-                      value={newOfficerDept}
-                      onChange={(e) => setNewOfficerDept(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs outline-none focus:bg-white text-slate-600 font-semibold"
-                    >
-                      {departments.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Authority Role</label>
-                    <select
-                      value={newOfficerRole}
-                      onChange={(e) => setNewOfficerRole(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs outline-none focus:bg-white text-slate-600 font-semibold"
-                    >
-                      <option value="Officer">Field Officer</option>
-                      <option value="Senior Officer">Senior Oversight Officer</option>
-                    </select>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={formSubmitting}
-                    className="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1 shadow"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Register Officer</span>
-                  </button>
-                </form>
-              </div>
-            )}
-
-            {/* INFO PANEL: USER TAB INFO */}
-            {activeTab === 'users' && (
-              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm space-y-3 text-xs text-slate-500">
-                <div className="font-extrabold text-slate-700 uppercase tracking-wider pb-2 border-b">Directory Audit Info</div>
-                <p>Citizens sign up via the public portal registration form.</p>
-                <p>Officers and Senior Officers can only be registered by an administrator.</p>
-                <p className="font-medium text-brand-600">Default passwords for all newly created officer accounts is: <span className="font-mono bg-slate-100 px-1 py-0.5 rounded font-bold">password123</span></p>
-              </div>
-            )}
-
-          </div>
-
+            </div>
+          )}
         </div>
-      )}
-
+      </main>
     </div>
   );
 };
+
 export default AdminDashboard;

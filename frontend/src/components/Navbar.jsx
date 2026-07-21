@@ -1,151 +1,179 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { Bell, LogOut, User, Menu, Shield } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { Menu, LogOut, Globe, Bell } from 'lucide-react';
 
-export const Navbar = ({ onToggleSidebar }) => {
-  const { user, logout } = useAuth();
+const Navbar = ({ onToggleSidebar, showMenuButton = true }) => {
+  const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-
-  const notifications = [
-    { id: 1, title: 'Status Updated', message: 'Pothole complaint UP-1001 marked "In Progress"', time: '2 hours ago' },
-    { id: 2, title: 'New Upvote', message: 'Your complaint on Water Leakage got 10 upvotes', time: '1 day ago' },
-    { id: 3, title: 'System Alert', message: 'Escalation time threshold reduced for Ward 5', time: '3 days ago' }
-  ];
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  const getRoleColor = (role) => {
-    const map = {
-      'Citizen': 'bg-teal-50 text-teal-700 border-teal-200',
-      'Officer': 'bg-amber-50 text-amber-700 border-amber-200',
-      'Senior Officer': 'bg-indigo-50 text-indigo-700 border-indigo-200',
-      'Admin': 'bg-rose-50 text-rose-700 border-rose-200'
-    };
-    return map[role] || 'bg-slate-50 text-slate-700 border-slate-200';
+  const getRoleBadgeColor = (role) => {
+    switch (role) {
+      case 'Admin': return 'bg-rose-50 text-rose-700 border-rose-200';
+      case 'Senior Officer': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'Officer': return 'bg-amber-50 text-amber-800 border-amber-200';
+      default: return 'bg-accent-50 text-accent-700 border-accent-150';
+    }
   };
 
+  // Mock Notifications for high fidelity experience
+  const mockNotifications = [
+    { id: 1, text: 'New complaint "Water Leakage" verified in Sector 2.', time: '5 mins ago' },
+    { id: 2, text: 'Road damage assignment updated to "In Progress".', time: '1 hour ago' },
+    { id: 3, text: 'Senior Officer reviewed your electrical report.', time: '4 hours ago' }
+  ];
+
   return (
-    <nav className="h-16 border-b border-slate-100 bg-white sticky top-0 z-40 px-6 flex items-center justify-between shadow-sm">
-      {/* Left: Brand & Mobile Sidebar Toggle */}
+    <nav className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 text-slate-800 z-40 px-4 md:px-6 flex items-center justify-between shadow-sm select-none">
+      {/* Brand & Left Controls */}
       <div className="flex items-center space-x-3">
-        {onToggleSidebar && (
-          <button 
+        {isAuthenticated && showMenuButton && (
+          <button
             onClick={onToggleSidebar}
-            className="p-2 text-slate-500 hover:bg-slate-50 rounded-xl lg:hidden"
+            className="p-1.5 rounded-lg hover:bg-slate-50 text-slate-500 hover:text-slate-900 transition-colors focus:outline-none md:hidden border border-slate-100"
+            aria-label="Toggle Navigation Sidebar"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="h-5 w-5" />
           </button>
         )}
-        <Link to="/" className="flex items-center space-x-2.5">
-          <div className="w-9 h-9 bg-brand-500 rounded-xl flex items-center justify-center shadow-md shadow-brand-100 relative overflow-hidden group">
-            <Shield className="w-5 h-5 text-white" />
-            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity" />
+        
+        <Link to="/" className="flex items-center space-x-2">
+          {/* Modern SVG Logo */}
+          <div className="bg-accent-500 p-2 rounded-xl text-white flex items-center justify-center shadow-sm shadow-accent-500/20">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <path d="M12 8v4" />
+              <path d="M12 16h.01" />
+            </svg>
           </div>
-          <div className="flex flex-col">
-            <span className="font-extrabold text-slate-800 text-lg leading-tight tracking-tight">UrbanPulse</span>
-            <span className="text-[10px] font-bold text-brand-600 uppercase tracking-widest leading-none">Civic Connect</span>
-          </div>
+          <span className="font-extrabold text-md tracking-tight text-slate-900">
+            Urban<span className="text-accent-600">Pulse</span>
+          </span>
         </Link>
+
+        {/* Civic Tagline */}
+        <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/65">
+          Smart City Portal
+        </span>
       </div>
 
-      {/* Right: Notification & Profile */}
-      <div className="flex items-center space-x-4">
-        {/* Notification Bell */}
-        {user && (
-          <div className="relative">
-            <button
-              onClick={() => {
-                setShowNotifications(!showNotifications);
-                setShowProfileMenu(false);
-              }}
-              className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-xl transition relative"
-            >
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white animate-ping" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
-            </button>
+      {/* Right Controls */}
+      <div className="flex items-center space-x-3.5">
+        {/* Public Explorer Link */}
+        <Link
+          to="/public-complaints"
+          className="flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all border border-slate-100"
+        >
+          <Globe className="h-4 w-4 text-slate-450" />
+          <span className="hidden sm:inline">Public Map</span>
+        </Link>
 
-            {/* Notification Dropdown */}
-            {showNotifications && (
-              <div className="absolute right-0 mt-3 w-80 bg-white border border-slate-100 rounded-2xl shadow-xl py-2 z-50 animate-fade">
-                <div className="px-4 py-2 border-b border-slate-50 flex justify-between items-center">
-                  <span className="font-bold text-slate-700 text-sm">Notifications</span>
-                  <span className="text-[10px] text-brand-600 font-bold hover:underline cursor-pointer">Mark all read</span>
-                </div>
-                <div className="divide-y divide-slate-50 max-h-72 overflow-y-auto">
-                  {notifications.map((n) => (
-                    <div key={n.id} className="p-4 hover:bg-slate-50 transition cursor-pointer text-xs">
-                      <div className="flex justify-between items-start">
-                        <span className="font-semibold text-slate-700">{n.title}</span>
-                        <span className="text-[10px] text-slate-400 font-medium">{n.time}</span>
-                      </div>
-                      <p className="text-slate-500 mt-1">{n.message}</p>
+        {isAuthenticated ? (
+          <div className="flex items-center space-x-2.5 relative">
+            {/* Bell Notification dropdown */}
+            <div className="relative">
+              <button 
+                onClick={() => {
+                  setNotificationsOpen(!notificationsOpen);
+                  setDropdownOpen(false);
+                }}
+                className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-50 border border-slate-100 rounded-lg transition-colors relative"
+              >
+                <Bell className="h-4 w-4" />
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-accent-500" />
+              </button>
+
+              {notificationsOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setNotificationsOpen(false)} />
+                  <div className="absolute right-0 mt-2.5 w-72 bg-white rounded-xl shadow-lg border border-slate-200 py-3 z-50 animate-fade-in">
+                    <div className="px-4 pb-2 border-b border-slate-100 flex items-center justify-between">
+                      <span className="text-xs font-extrabold text-slate-800">Notifications</span>
+                      <span className="text-[10px] text-accent-600 font-bold hover:underline cursor-pointer">Mark all read</span>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+                    <div className="divide-y divide-slate-50">
+                      {mockNotifications.map((notif) => (
+                        <div key={notif.id} className="px-4 py-2.5 hover:bg-slate-50 transition-colors">
+                          <p className="text-[11px] font-medium text-slate-650 leading-relaxed">{notif.text}</p>
+                          <span className="text-[9px] font-bold text-slate-400 mt-1 block">{notif.time}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
 
-        {/* User Profile */}
-        {user ? (
-          <div className="relative">
-            <button
-              onClick={() => {
-                setShowProfileMenu(!showProfileMenu);
-                setShowNotifications(false);
-              }}
-              className="flex items-center space-x-2.5 p-1 px-3 rounded-xl border border-slate-100 hover:bg-slate-50 transition text-left"
-            >
-              <div className="w-8 h-8 bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center font-bold text-sm">
-                {user.name[0]}
-              </div>
-              <div className="hidden sm:flex flex-col">
-                <span className="text-sm font-semibold text-slate-800 leading-tight">{user.name}</span>
-                <span className={`text-[9px] px-1.5 py-0.5 border rounded-full font-bold mt-0.5 self-start ${getRoleColor(user.role)}`}>
-                  {user.role}
-                </span>
-              </div>
-            </button>
+            {/* User Dropdown Trigger */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setDropdownOpen(!dropdownOpen);
+                  setNotificationsOpen(false);
+                }}
+                className="flex items-center space-x-2.5 px-3 py-1.5 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors focus:outline-none"
+              >
+                <div className="h-7 w-7 rounded-lg bg-accent-100 text-accent-700 font-extrabold text-xs flex items-center justify-center border border-accent-200 uppercase">
+                  {user?.username?.substring(0, 1) || 'U'}
+                </div>
+                <div className="hidden sm:flex flex-col items-start leading-none text-left">
+                  <span className="text-xs font-bold text-slate-800">{user?.username}</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase mt-0.5 tracking-wide">{user?.role}</span>
+                </div>
+              </button>
 
-            {/* Profile Dropdown */}
-            {showProfileMenu && (
-              <div className="absolute right-0 mt-3 w-56 bg-white border border-slate-100 rounded-2xl shadow-xl py-2 z-50">
-                <div className="px-4 py-2 border-b border-slate-50 text-xs sm:hidden">
-                  <div className="font-semibold text-slate-800">{user.name}</div>
-                  <div className="text-slate-400 truncate">{user.email}</div>
-                </div>
-                <div className="p-1">
-                  <div className="text-[10px] text-slate-400 font-bold px-3 py-1 uppercase tracking-wider">Session</div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center space-x-2 px-3 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-xl transition text-left font-medium"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              </div>
-            )}
+              {/* Dropdown Menu */}
+              {dropdownOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40 bg-transparent" 
+                    onClick={() => setDropdownOpen(false)}
+                  />
+                  
+                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-slate-200 py-1.5 z-50 animate-fade-in">
+                    {/* Header info */}
+                    <div className="px-4 py-2 border-b border-slate-100">
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Account Profile</p>
+                      <p className="text-xs font-extrabold text-slate-800 mt-0.5 truncate">{user?.username}</p>
+                      <p className="text-[10px] text-slate-550 truncate">{user?.email}</p>
+                      <span className={`inline-block mt-2 px-2.5 py-0.5 rounded-full text-[9px] font-bold border ${getRoleBadgeColor(user?.role)}`}>
+                        {user?.role}
+                      </span>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="p-1">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center space-x-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors text-left"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         ) : (
           <div className="flex items-center space-x-2">
             <Link
               to="/login"
-              className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800"
+              className="text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-50 border border-transparent hover:border-slate-100 px-3 py-2 rounded-lg transition-all"
             >
-              Login
+              Sign In
             </Link>
             <Link
               to="/register"
-              className="px-4 py-2 text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 rounded-xl shadow-sm transition"
+              className="bg-accent-500 hover:bg-accent-600 text-white text-xs font-bold px-3.5 py-2 rounded-lg transition-all shadow-sm shadow-accent-500/20 active:scale-95 border border-accent-600"
             >
               Register
             </Link>
@@ -155,4 +183,5 @@ export const Navbar = ({ onToggleSidebar }) => {
     </nav>
   );
 };
+
 export default Navbar;

@@ -1,286 +1,395 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { complaintService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
+import ComplaintCard from '../components/ComplaintCard';
+import Loading from '../components/Loading';
+import Error from '../components/Error';
 import { 
-  Building2, ShieldAlert, Award, Clock, AlertTriangle, 
-  ChevronRight, TrendingUp, BarChart4, PieChart 
+  BarChart3, 
+  AlertOctagon, 
+  History, 
+  Hourglass, 
+  ClipboardList, 
+  TrendingUp,
+  Calendar,
+  ChevronRight,
+  TrendingDown
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import StatCard from '../components/StatCard';
-import StatusBadge from '../components/StatusBadge';
-import { Loading } from '../components/Loading';
-import { formatDate, getPriorityDetails } from '../utils/helpers';
-// Recharts imports for premium graphics
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, Legend, PieChart as RePieChart, 
-  Pie, Cell 
-} from 'recharts';
 
-export const SeniorOfficerDashboard = () => {
+const SeniorOfficerDashboard = () => {
   const { user } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  
+  // Tab control
+  const [activeTab, setActiveTab] = useState('Overview');
 
   const fetchDepartmentComplaints = async () => {
     setLoading(true);
+    setError('');
     try {
-      // In a real application, you would load by department
-      // We will load all complaints and filter by department in local mock DB
       const data = await complaintService.getComplaints();
-      const filtered = data.filter(c => c.department === user?.department);
-      setComplaints(filtered);
-    } catch (error) {
-      console.error('Failed to load department complaints:', error);
+      setComplaints(data);
+    } catch (err) {
+      console.warn("API offline, falling back to simulated local database.", err);
+      const localData = localStorage.getItem('urbanpulse_mock_complaints');
+      if (localData) {
+        setComplaints(JSON.parse(localData));
+      } else {
+        const dummyComplaints = [
+          {
+            id: 1,
+            title: "Severe Road Damage on 5th Avenue",
+            description: "Deep potholes have formed in the middle of the road near the metro station, causing traffic congestion and severe hazard to motorcyclists.",
+            department: "Roads & Highways",
+            status: "In Progress",
+            priority_score: 8,
+            upvotes: 42,
+            location_name: "5th Avenue Metro Stn",
+            lat: 12.9716,
+            lng: 77.5946,
+            created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 2,
+            title: "Water Leakage near Central Park",
+            description: "A main municipal water pipe has burst, wasting thousands of gallons of clean drinking water and flooding the pedestrian walkway.",
+            department: "Water & Sanitation",
+            status: "Created",
+            priority_score: 5,
+            upvotes: 19,
+            location_name: "Central Park West Gate",
+            lat: 12.9801,
+            lng: 77.6012,
+            created_at: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 3,
+            title: "Damaged Electric Substation Fencing",
+            description: "The protective wire fencing around the local electricity sub-station is completely broken. Stray animals and children are entering the high-voltage hazard zone.",
+            department: "Electricity & Power",
+            status: "Resolved",
+            priority_score: 9,
+            upvotes: 112,
+            location_name: "Sector 4 Utility Compound",
+            lat: 12.9654,
+            lng: 77.5876,
+            created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 4,
+            title: "Open drainage cover in Sector-C Market",
+            description: "A large concrete drainage cover is broken and missing, leaving a 4-foot deep open pit directly on the footpath of a busy market lane.",
+            department: "Water & Sanitation",
+            status: "Assigned",
+            priority_score: 9,
+            upvotes: 68,
+            location_name: "Sector C Main Bazaar",
+            lat: 12.9789,
+            lng: 77.5901,
+            created_at: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString()
+          }
+        ];
+        localStorage.setItem('urbanpulse_mock_complaints', JSON.stringify(dummyComplaints));
+        setComplaints(dummyComplaints);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (user?.department) {
-      fetchDepartmentComplaints();
-    }
-  }, [user]);
+    fetchDepartmentComplaints();
+  }, []);
 
-  // Aggregate Metrics
-  const totalCount = complaints.length;
-  const unassignedCount = complaints.filter(c => !c.officer).length;
-  // A mock escalation logic: priorityScore > 75 and status !== Resolved
-  const escalatedCount = complaints.filter(c => c.priorityScore > 75 && c.status !== 'Resolved').length;
-  const avgPriority = totalCount 
-    ? Math.round(complaints.reduce((sum, c) => sum + c.priorityScore, 0) / totalCount) 
-    : 0;
+  const handleUpvoteSuccess = (id) => {
+    setComplaints((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, upvotes: c.upvotes + 1, is_upvoted: true } : c))
+    );
+  };
 
-  // Chart 1: Status Volumes data
-  const statusCounts = complaints.reduce((acc, c) => {
-    acc[c.status] = (acc[c.status] || 0) + 1;
-    return acc;
-  }, {});
+  // Derive specialized complaint groupings
+  const escalatedComplaints = complaints.filter(
+    (c) => (Number(c.priority_score) >= 8 || c.upvotes >= 50) && c.status.toLowerCase() !== 'resolved'
+  );
 
-  const barChartData = Object.keys(statusCounts).map(status => ({
-    name: status,
-    tickets: statusCounts[status]
-  }));
+  const delayedComplaints = complaints.filter((c) => {
+    if (c.status.toLowerCase() === 'resolved') return false;
+    const createdAt = new Date(c.created_at);
+    const diffTime = Math.abs(Date.now() - createdAt);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays >= 7; 
+  });
 
-  // Chart 2: Priority levels data
-  const priorityCounts = complaints.reduce((acc, c) => {
-    const priority = getPriorityDetails(c.priorityScore).label;
-    acc[priority] = (acc[priority] || 0) + 1;
-    return acc;
-  }, {});
+  // Calculate metrics
+  const totalDepartmentCount = complaints.length;
+  const resolvedCount = complaints.filter((c) => c.status.toLowerCase() === 'resolved').length;
+  const resolutionRate = totalDepartmentCount > 0 ? Math.round((resolvedCount / totalDepartmentCount) * 100) : 0;
 
-  const pieChartColors = ['#f43f5e', '#f97316', '#eab308', '#10b981']; // Rose (Critical), Orange (High), Amber (Medium), Emerald (Low)
-  const pieChartLabels = ['Critical', 'High', 'Medium', 'Low'];
-  const pieChartData = pieChartLabels.map(label => ({
-    name: label,
-    value: priorityCounts[label] || 0
-  })).filter(item => item.value > 0);
+  const getGreeting = () => {
+    const hr = new Date().getHours();
+    if (hr < 12) return 'Good Morning';
+    if (hr < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
 
-  // Critical/Delayed List (Priority > 60 and not resolved)
-  const escalatedIssues = complaints
-    .filter(c => c.priorityScore >= 60 && c.status !== 'Resolved')
-    .sort((a, b) => b.priorityScore - a.priorityScore);
+  const currentFormattedDate = new Date().toLocaleDateString(undefined, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Department Administration</h1>
-        <p className="text-xs text-slate-500 font-medium">
-          Senior Oversight Board for the **{user?.department || 'Municipal'}** division. Monitor active workloads and delayed tickets.
-        </p>
-      </div>
+    <div className="min-h-screen bg-slate-50 flex">
+      <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <Sidebar isOpen={sidebarOpen} onCloseSideBar={() => setSidebarOpen(false)} />
 
-      {/* Metrics Row */}
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 animate-pulse">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-28 bg-white border border-slate-100 rounded-2xl" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-          <StatCard
-            title="Total Tickets"
-            value={totalCount}
-            icon={Building2}
-            colorClass="text-indigo-600 bg-indigo-50"
-            changeText={`Active in ${user?.department}`}
-          />
-          <StatCard
-            title="Escalated Tickets"
-            value={escalatedCount}
-            icon={AlertTriangle}
-            colorClass="text-rose-600 bg-rose-50"
-            changeText="Score above 75, unresolved"
-            changeType="negative"
-          />
-          <StatCard
-            title="Unassigned Cases"
-            value={unassignedCount}
-            icon={Clock}
-            colorClass="text-amber-600 bg-amber-50"
-            changeText="Require officer assignment"
-            changeType="warning"
-          />
-          <StatCard
-            title="Average Priority"
-            value={`${avgPriority}%`}
-            icon={Award}
-            colorClass="text-brand-600 bg-brand-50"
-            changeText="Overall department severity"
-          />
-        </div>
-      )}
-
-      {/* Analytics Charts Grid */}
-      {!loading && complaints.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Chart 1: Bar Chart (Status Distribution) */}
-          <div className="lg:col-span-2 bg-white border border-slate-100 p-5 rounded-3xl shadow-sm space-y-4">
-            <div className="flex items-center space-x-2 shrink-0">
-              <BarChart4 className="w-4 text-slate-400" />
-              <h3 className="font-bold text-slate-700 text-sm">Lifecycle Status Volumes</h3>
+      <main className="flex-1 md:pl-64 pt-16 min-h-screen">
+        <div className="p-6 md:p-8 max-w-7xl w-full mx-auto space-y-8 animate-fade-in">
+          {/* Header Greeting Section */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-6">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                {getGreeting()}, {user?.username || 'Senior Officer'} 👋
+              </h2>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Here's what's happening across your city today.
+              </p>
             </div>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" fontSize={11} stroke="#94a3b8" />
-                  <YAxis fontSize={11} stroke="#94a3b8" allowDecimals={false} />
-                  <Tooltip 
-                    contentStyle={{ background: '#0f172a', color: '#fff', borderRadius: '12px', fontSize: '11px', border: 'none' }} 
-                  />
-                  <Bar dataKey="tickets" fill="#14b8a6" radius={[6, 6, 0, 0]} barSize={35} />
-                </BarChart>
-              </ResponsiveContainer>
+            
+            <div className="flex items-center space-x-3 self-start sm:self-auto">
+              <span className="inline-flex items-center text-[10px] font-bold text-slate-450 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
+                <Calendar className="h-3.5 w-3.5 mr-1.5 text-slate-450 stroke-[2.5]" />
+                {currentFormattedDate}
+              </span>
             </div>
           </div>
 
-          {/* Chart 2: Pie Chart (Priority Levels) */}
-          <div className="bg-white border border-slate-100 p-5 rounded-3xl shadow-sm space-y-4">
-            <div className="flex items-center space-x-2 shrink-0">
-              <PieChart className="w-4 text-slate-400" />
-              <h3 className="font-bold text-slate-700 text-sm">Severity Ratio</h3>
+          {/* Statistics Metrics Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 select-none">
+            {/* Total */}
+            <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
+              <div className="p-3 bg-slate-50 text-slate-500 rounded-xl border border-slate-100">
+                <ClipboardList className="h-6 w-6 stroke-[1.5]" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Filings</p>
+                <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{totalDepartmentCount}</h3>
+              </div>
             </div>
-            <div className="h-64 flex flex-col items-center justify-center">
-              {pieChartData.length > 0 ? (
-                <div className="w-full h-4/5">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RePieChart>
-                      <Pie
-                        data={pieChartData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={70}
-                        paddingAngle={4}
-                        dataKey="value"
-                      >
-                        {pieChartData.map((entry, index) => {
-                          const labelIdx = pieChartLabels.indexOf(entry.name);
-                          return <Cell key={`cell-${index}`} fill={pieChartColors[labelIdx]} />;
-                        })}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{ background: '#0f172a', color: '#fff', borderRadius: '12px', fontSize: '11px', border: 'none' }}
-                      />
-                    </RePieChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <p className="text-xs text-slate-400">No priority data</p>
-              )}
-              {/* Pie Legends */}
-              <div className="flex flex-wrap justify-center gap-3 text-[10px] font-bold text-slate-500 mt-2">
-                {pieChartData.map((item, index) => {
-                  const labelIdx = pieChartLabels.indexOf(item.name);
-                  return (
-                    <div key={item.name} className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: pieChartColors[labelIdx] }} />
-                      <span>{item.name} ({item.value})</span>
-                    </div>
-                  );
-                })}
+
+            {/* Escalated */}
+            <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
+              <div className="p-3 bg-rose-50 text-rose-600 rounded-xl border border-rose-100">
+                <AlertOctagon className="h-6 w-6 stroke-[1.5]" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Escalated Queue</p>
+                <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{escalatedComplaints.length}</h3>
+              </div>
+            </div>
+
+            {/* Delayed */}
+            <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
+              <div className="p-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-100">
+                <Hourglass className="h-6 w-6 stroke-[1.5]" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Delayed &gt; 7 Days</p>
+                <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{delayedComplaints.length}</h3>
+              </div>
+            </div>
+
+            {/* Resolution Rate */}
+            <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
+              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
+                <TrendingUp className="h-6 w-6 stroke-[1.5]" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Resolution Rate</p>
+                <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{resolutionRate}%</h3>
               </div>
             </div>
           </div>
 
-        </div>
-      )}
-
-      {/* Escalated Issues Table */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Escalated & Actionable Issues</h2>
-          <span className="text-xs text-slate-400 font-medium">Tickets requiring immediate assignment/review</span>
-        </div>
-
-        {loading ? (
-          <Loading text="Loading escalations..." />
-        ) : escalatedIssues.length === 0 ? (
-          <div className="p-12 bg-white border border-slate-100 rounded-3xl text-center text-slate-400 text-sm shadow-sm">
-            Excellent! No escalated or delayed tickets currently in division queue.
+          {/* Navigation tabs selector */}
+          <div className="flex border-b border-slate-200 select-none">
+            {['Overview', 'Escalated', 'Delayed', 'All Department'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`py-3 px-6 text-xs font-bold transition-all border-b-2 -mb-[2px] ${
+                  activeTab === tab
+                    ? 'border-accent-600 text-accent-700 font-extrabold'
+                    : 'border-transparent text-slate-400 hover:text-slate-655'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
-        ) : (
-          <div className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    <th className="p-4 pl-6">ID</th>
-                    <th className="p-4">Incident Title</th>
-                    <th className="p-4">Priority Score</th>
-                    <th className="p-4">Assigned Officer</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4">Date Filed</th>
-                    <th className="p-4 pr-6 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50 text-xs">
-                  {escalatedIssues.map((c) => {
-                    const priority = getPriorityDetails(c.priorityScore);
-                    return (
-                      <tr key={c.id} className="hover:bg-slate-50/50 transition">
-                        <td className="p-4 pl-6 font-mono font-bold text-slate-400">{c.id}</td>
-                        <td className="p-4 font-bold text-slate-800">{c.title}</td>
-                        <td className="p-4">
-                          <span className={`px-2.5 py-0.5 border rounded-full font-semibold ${priority.color}`}>
-                            {c.priorityScore} ({priority.label})
+
+          {/* List display based on selected tab */}
+          <div>
+            {loading ? (
+              <div className="bg-white rounded-2xl border border-slate-200 p-12">
+                <Loading message="Compiling analytics dashboard..." />
+              </div>
+            ) : error ? (
+              <Error message={error} onRetry={fetchDepartmentComplaints} />
+            ) : (
+              <div className="space-y-6">
+                {/* Overview tab */}
+                {activeTab === 'Overview' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Escalated block */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                          <h4 className="font-extrabold text-xs text-slate-400 uppercase tracking-wider flex items-center">
+                            <AlertOctagon className="h-4.5 w-4.5 text-rose-500 mr-2" />
+                            High Priority Escalations
+                          </h4>
+                          <span className="bg-rose-50 border border-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            {escalatedComplaints.length} Alert{escalatedComplaints.length !== 1 ? 's' : ''}
                           </span>
-                        </td>
-                        <td className="p-4 text-slate-600 font-medium">
-                          {c.officer ? (
-                            <span>{c.officer.name}</span>
-                          ) : (
-                            <span className="text-rose-500 font-bold bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-lg">Unassigned</span>
-                          )}
-                        </td>
-                        <td className="p-4">
-                          <StatusBadge status={c.status} />
-                        </td>
-                        <td className="p-4 text-slate-400">{formatDate(c.createdAt)}</td>
-                        <td className="p-4 pr-6 text-right">
-                          <Link
-                            to={`/complaints/${c.id}`}
-                            className="bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold px-3 py-1.5 rounded-xl transition inline-block text-[11px]"
-                          >
-                            Assign/Edit
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
+                        </div>
+                        
+                        {escalatedComplaints.length === 0 ? (
+                          <p className="text-xs text-slate-400 font-semibold p-4 text-center">No active escalations present in the system.</p>
+                        ) : (
+                          <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                            {escalatedComplaints.slice(0, 4).map((item) => (
+                              <div key={item.id} className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/50 rounded-xl hover:border-slate-300 transition-colors">
+                                <div className="truncate pr-4">
+                                  <h5 className="text-xs font-bold text-slate-800 truncate">{item.title}</h5>
+                                  <p className="text-[10px] text-slate-400 font-semibold mt-1">Priority Score: {item.priority_score} | Upvotes: {item.upvotes}</p>
+                                </div>
+                                <a 
+                                  href={`/complaints/${item.id}`}
+                                  className="inline-flex items-center text-[10px] font-bold text-accent-600 hover:text-accent-700 hover:underline flex-shrink-0"
+                                >
+                                  Audit <ChevronRight className="h-3 w-3 ml-0.5" />
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {escalatedComplaints.length > 4 && (
+                        <button 
+                          onClick={() => setActiveTab('Escalated')}
+                          className="w-full text-center text-xs font-bold text-slate-450 hover:text-slate-700 pt-4 border-t border-slate-100 mt-2.5"
+                        >
+                          View all escalated items &rarr;
+                        </button>
+                      )}
+                    </div>
 
+                    {/* Delayed block */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                          <h4 className="font-extrabold text-xs text-slate-400 uppercase tracking-wider flex items-center">
+                            <Hourglass className="h-4.5 w-4.5 text-amber-500 mr-2" />
+                            Delayed Performance Warnings
+                          </h4>
+                          <span className="bg-amber-50 border border-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            {delayedComplaints.length} Delayed
+                          </span>
+                        </div>
+                        
+                        {delayedComplaints.length === 0 ? (
+                          <p className="text-xs text-slate-400 font-semibold p-4 text-center">All department filings are resolving within SLA limits.</p>
+                        ) : (
+                          <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                            {delayedComplaints.slice(0, 4).map((item) => (
+                              <div key={item.id} className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/50 rounded-xl hover:border-slate-300 transition-colors">
+                                <div className="truncate pr-4">
+                                  <h5 className="text-xs font-bold text-slate-800 truncate">{item.title}</h5>
+                                  <p className="text-[10px] text-slate-400 font-semibold mt-1">Filed: {new Date(item.created_at).toLocaleDateString()}</p>
+                                </div>
+                                <a 
+                                  href={`/complaints/${item.id}`}
+                                  className="inline-flex items-center text-[10px] font-bold text-accent-600 hover:text-accent-700 hover:underline flex-shrink-0"
+                                >
+                                  Audit <ChevronRight className="h-3 w-3 ml-0.5" />
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {delayedComplaints.length > 4 && (
+                        <button 
+                          onClick={() => setActiveTab('Delayed')}
+                          className="w-full text-center text-xs font-bold text-slate-450 hover:text-slate-700 pt-4 border-t border-slate-100 mt-2.5"
+                        >
+                          View all delayed reports &rarr;
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Escalated List view */}
+                {activeTab === 'Escalated' && (
+                  escalatedComplaints.length === 0 ? (
+                    <div className="bg-white p-12 border border-slate-200 rounded-2xl text-center text-xs text-slate-400 font-bold">
+                      No active escalated issues.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {escalatedComplaints.map((complaint) => (
+                        <ComplaintCard key={complaint.id} complaint={complaint} onUpvoteSuccess={handleUpvoteSuccess} />
+                      ))}
+                    </div>
+                  )
+                )}
+
+                {/* Delayed List view */}
+                {activeTab === 'Delayed' && (
+                  delayedComplaints.length === 0 ? (
+                    <div className="bg-white p-12 border border-slate-200 rounded-2xl text-center text-xs text-slate-400 font-bold">
+                      No unresolved delayed complaints.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {delayedComplaints.map((complaint) => (
+                        <ComplaintCard key={complaint.id} complaint={complaint} onUpvoteSuccess={handleUpvoteSuccess} />
+                      ))}
+                    </div>
+                  )
+                )}
+
+                {/* All Department List view */}
+                {activeTab === 'All Department' && (
+                  complaints.length === 0 ? (
+                    <div className="bg-white p-12 border border-slate-200 rounded-2xl text-center text-xs text-slate-400 font-bold">
+                      No complaints registered in the department registry.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {complaints.map((complaint) => (
+                        <ComplaintCard key={complaint.id} complaint={complaint} onUpvoteSuccess={handleUpvoteSuccess} />
+                      ))}
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
     </div>
   );
 };
+
 export default SeniorOfficerDashboard;

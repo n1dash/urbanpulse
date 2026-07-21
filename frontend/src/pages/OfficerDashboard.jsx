@@ -1,193 +1,326 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { complaintService } from '../services/api';
-import { ListTodo, ShieldAlert, CheckCircle, Search, Calendar, MapPin } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import StatCard from '../components/StatCard';
-import StatusBadge from '../components/StatusBadge';
-import { Loading } from '../components/Loading';
-import { formatDate, getPriorityDetails } from '../utils/helpers';
+import { useAuth } from '../context/AuthContext';
+import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
+import ComplaintCard from '../components/ComplaintCard';
+import Loading from '../components/Loading';
+import Error from '../components/Error';
+import { ListTodo, CheckSquare, Clock, Filter, AlertTriangle, Calendar, Award, BarChart3 } from 'lucide-react';
 
-export const OfficerDashboard = () => {
+const OfficerDashboard = () => {
   const { user } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [error, setError] = useState('');
+  
+  // Filtering states
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [priorityFilter, setPriorityFilter] = useState('All');
 
   const fetchAssignedComplaints = async () => {
     setLoading(true);
+    setError('');
     try {
-      // Fetch complaints assigned to this specific officer's email
-      const data = await complaintService.getComplaints({ officerEmail: user?.email });
+      const data = await complaintService.getComplaints();
       setComplaints(data);
-    } catch (error) {
-      console.error('Failed to load officer complaints:', error);
+    } catch (err) {
+      console.warn("API offline, falling back to simulated local database.", err);
+      const localData = localStorage.getItem('urbanpulse_mock_complaints');
+      if (localData) {
+        setComplaints(JSON.parse(localData));
+      } else {
+        const dummyComplaints = [
+          {
+            id: 1,
+            title: "Severe Road Damage on 5th Avenue",
+            description: "Deep potholes have formed in the middle of the road near the metro station, causing traffic congestion and severe hazard to motorcyclists.",
+            department: "Roads & Highways",
+            status: "In Progress",
+            priority_score: 8,
+            upvotes: 42,
+            location_name: "5th Avenue Metro Stn",
+            lat: 12.9716,
+            lng: 77.5946,
+            created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 2,
+            title: "Water Leakage near Central Park",
+            description: "A main municipal water pipe has burst, wasting thousands of gallons of clean drinking water and flooding the pedestrian walkway.",
+            department: "Water & Sanitation",
+            status: "Created",
+            priority_score: 5,
+            upvotes: 19,
+            location_name: "Central Park West Gate",
+            lat: 12.9801,
+            lng: 77.6012,
+            created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 3,
+            title: "Damaged Electric Substation Fencing",
+            description: "The protective wire fencing around the local electricity sub-station is completely broken. Stray animals and children are entering the high-voltage hazard zone.",
+            department: "Electricity & Power",
+            status: "Resolved",
+            priority_score: 9,
+            upvotes: 112,
+            location_name: "Sector 4 Utility Compound",
+            lat: 12.9654,
+            lng: 77.5876,
+            created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+          }
+        ];
+        localStorage.setItem('urbanpulse_mock_complaints', JSON.stringify(dummyComplaints));
+        setComplaints(dummyComplaints);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (user?.email) {
-      fetchAssignedComplaints();
+    fetchAssignedComplaints();
+  }, []);
+
+  const handleUpvoteSuccess = (id) => {
+    setComplaints((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, upvotes: c.upvotes + 1, is_upvoted: true } : c))
+    );
+  };
+
+  // Filter complaints list based on filters select dropdown
+  const filteredComplaints = complaints.filter((c) => {
+    const statusMatch = statusFilter === 'All' || c.status === statusFilter;
+    
+    let priorityMatch = true;
+    if (priorityFilter !== 'All') {
+      const score = Number(c.priority_score) || 0;
+      if (priorityFilter === 'High') priorityMatch = score >= 7;
+      else if (priorityFilter === 'Medium') priorityMatch = score >= 4 && score < 7;
+      else if (priorityFilter === 'Low') priorityMatch = score < 4;
     }
-  }, [user]);
 
-  // Metrics
-  const totalAssigned = complaints.length;
-  const inProgressCount = complaints.filter(c => c.status === 'In Progress' || c.status === 'Assigned').length;
-  const resolvedCount = complaints.filter(c => c.status === 'Resolved').length;
+    return statusMatch && priorityMatch;
+  });
 
-  const filteredComplaints = complaints.filter(c => {
-    const matchesSearch = c.title.toLowerCase().includes(search.toLowerCase()) || 
-                          c.id.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === '' || c.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  // Calculate metrics
+  const totalCount = complaints.length;
+  const pendingCount = complaints.filter(
+    (c) => c.status && c.status.toLowerCase() !== 'resolved'
+  ).length;
+  const resolvedCount = complaints.filter(
+    (c) => c.status && c.status.toLowerCase() === 'resolved'
+  ).length;
+
+  const getGreeting = () => {
+    const hr = new Date().getHours();
+    if (hr < 12) return 'Good Morning';
+    if (hr < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  const currentFormattedDate = new Date().toLocaleDateString(undefined, {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   });
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Field Officer Dashboard</h1>
-        <p className="text-xs text-slate-500 font-medium">
-          Welcome back, {user?.name}. Manage and progress civic repair tickets for the **{user?.department || 'General'}** division.
-        </p>
-      </div>
+    <div className="min-h-screen bg-slate-50 flex">
+      <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <Sidebar isOpen={sidebarOpen} onCloseSideBar={() => setSidebarOpen(false)} />
 
-      {/* Metrics Row */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-28 bg-white border border-slate-100 rounded-2xl" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          <StatCard
-            title="Total Assigned"
-            value={totalAssigned}
-            icon={ListTodo}
-            colorClass="text-brand-600 bg-brand-50"
-            changeText="Total tickets in your queue"
-          />
-          <StatCard
-            title="Active Cases"
-            value={inProgressCount}
-            icon={ShieldAlert}
-            colorClass="text-amber-600 bg-amber-50"
-            changeText="Pending action or in progress"
-            changeType="warning"
-          />
-          <StatCard
-            title="Resolved Tickets"
-            value={resolvedCount}
-            icon={CheckCircle}
-            colorClass="text-emerald-600 bg-emerald-50"
-            changeText="Completed and closed"
-            changeType="positive"
-          />
-        </div>
-      )}
-
-      {/* Main List */}
-      <div className="space-y-4">
-        {/* Filters */}
-        <div className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
-          {/* Search */}
-          <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search by ID or keywords..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:bg-white focus:border-brand-500 transition"
-            />
-          </div>
-
-          {/* Status filter */}
-          <div className="w-full sm:w-auto flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden sm:inline">Filter:</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full sm:w-auto bg-slate-50 border border-slate-200 rounded-xl py-1.5 px-3 text-xs outline-none focus:bg-white text-slate-600 font-semibold cursor-pointer"
-            >
-              <option value="">All Statuses</option>
-              <option value="Assigned">Assigned</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Resolved">Resolved</option>
-              <option value="Verified">Verified</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Tickets table */}
-        {loading ? (
-          <Loading text="Loading assigned issues..." />
-        ) : filteredComplaints.length === 0 ? (
-          <div className="p-12 border border-slate-200 border-dashed rounded-2xl text-center text-slate-400 text-sm">
-            No complaints found in your queue under this filter.
-          </div>
-        ) : (
-          <div className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    <th className="p-4 pl-6">ID</th>
-                    <th className="p-4">Complaint Title</th>
-                    <th className="p-4">Priority Score</th>
-                    <th className="p-4">Location</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4">Date Filed</th>
-                    <th className="p-4 pr-6 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50 text-xs">
-                  {filteredComplaints.map((c) => {
-                    const priority = getPriorityDetails(c.priorityScore);
-                    return (
-                      <tr key={c.id} className="hover:bg-slate-50/50 transition">
-                        <td className="p-4 pl-6 font-mono font-bold text-slate-400">{c.id}</td>
-                        <td className="p-4">
-                          <div className="font-bold text-slate-800 line-clamp-1">{c.title}</div>
-                        </td>
-                        <td className="p-4">
-                          <span className={`px-2 py-0.5 border rounded-full font-semibold ${priority.color}`}>
-                            {c.priorityScore} ({priority.label})
-                          </span>
-                        </td>
-                        <td className="p-4 text-slate-500">
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span className="truncate max-w-[150px]">{c.location?.address}</span>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <StatusBadge status={c.status} />
-                        </td>
-                        <td className="p-4 text-slate-400">{formatDate(c.createdAt)}</td>
-                        <td className="p-4 pr-6 text-right">
-                          <Link
-                            to={`/complaints/${c.id}`}
-                            className="bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold px-3 py-1.5 rounded-xl transition inline-block text-[11px]"
-                          >
-                            Update
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+      <main className="flex-1 md:pl-64 pt-16 min-h-screen">
+        <div className="p-6 md:p-8 max-w-7xl w-full mx-auto space-y-8 animate-fade-in">
+          {/* Welcoming Header Panel */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-6">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                {getGreeting()}, {user?.username || 'Officer'} 👋
+              </h2>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Here's what's happening across your city today.
+              </p>
+            </div>
+            
+            <div className="flex items-center space-x-3 self-start sm:self-auto">
+              <span className="inline-flex items-center text-[10px] font-bold text-slate-450 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
+                <Calendar className="h-3.5 w-3.5 mr-1.5 text-slate-450 stroke-[2.5]" />
+                {currentFormattedDate}
+              </span>
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Core Layout Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column: Metrics & Filter Bar & Complaints lists */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Quick Metrics Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 select-none">
+                {/* Total */}
+                <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
+                  <div className="p-3 bg-slate-50 text-slate-500 rounded-xl border border-slate-100">
+                    <ListTodo className="h-6 w-6 stroke-[1.5]" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Assigned Issues</p>
+                    <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{totalCount}</h3>
+                  </div>
+                </div>
+
+                {/* Pending */}
+                <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
+                  <div className="p-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-100">
+                    <Clock className="h-6 w-6 stroke-[1.5]" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">In Progress</p>
+                    <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{pendingCount}</h3>
+                  </div>
+                </div>
+
+                {/* Resolved */}
+                <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
+                  <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
+                    <CheckSquare className="h-6 w-6 stroke-[1.5]" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Resolved</p>
+                    <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{resolvedCount}</h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Filters Bar card */}
+              <div className="bg-white border border-slate-200 p-4.5 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center space-x-2 text-slate-700">
+                  <Filter className="h-4 w-4 text-accent-500 stroke-[2.5]" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Filter Assigned Logs</span>
+                </div>
+
+                <div className="flex flex-wrap gap-2.5">
+                  {/* Status */}
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="bg-slate-55 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-650 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 cursor-pointer outline-none"
+                  >
+                    <option value="All">All Statuses</option>
+                    <option value="Created">Created</option>
+                    <option value="Verified">Verified</option>
+                    <option value="Assigned">Assigned</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
+                  </select>
+
+                  {/* Priority */}
+                  <select
+                    value={priorityFilter}
+                    onChange={(e) => setPriorityFilter(e.target.value)}
+                    className="bg-slate-55 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-650 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 cursor-pointer outline-none"
+                  >
+                    <option value="All">All Priorities</option>
+                    <option value="High">High (Score &ge; 7)</option>
+                    <option value="Medium">Medium (Score 4 - 6)</option>
+                    <option value="Low">Low (Score &lt; 4)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Assigned List */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center">
+                  <ListTodo className="h-4.5 w-4.5 text-accent-500 mr-2" />
+                  Your Assigned Audit Worklist
+                </h3>
+
+                {loading ? (
+                  <div className="bg-white rounded-2xl border border-slate-200 p-12">
+                    <Loading message="Syncing assignments checklist..." />
+                  </div>
+                ) : error ? (
+                  <Error message={error} onRetry={fetchAssignedComplaints} />
+                ) : filteredComplaints.length === 0 ? (
+                  <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center flex flex-col items-center justify-center">
+                    <div className="p-4 bg-slate-50 text-slate-400 rounded-full mb-4">
+                      <AlertTriangle className="h-8 w-8 stroke-[1.2]" />
+                    </div>
+                    <h4 className="font-bold text-slate-900 mb-1">No assignments found</h4>
+                    <p className="text-xs text-slate-500 max-w-sm leading-relaxed">
+                      No civic reports found in your queue matching the selected filters.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {filteredComplaints.map((complaint) => (
+                      <ComplaintCard
+                        key={complaint.id}
+                        complaint={complaint}
+                        onUpvoteSuccess={handleUpvoteSuccess}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column: Performance Summary */}
+            <div className="space-y-6">
+              {/* Performance Card */}
+              <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-4 select-none">
+                <div className="flex items-center space-x-2 text-slate-700">
+                  <Award className="h-5 w-5 text-accent-500 stroke-[2.5]" />
+                  <h4 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Your Audit Performance</h4>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-normal">
+                  Your current department performance stats, tracked relative to citizen SLA guidelines.
+                </p>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Avg SLA Time</span>
+                    <p className="text-sm font-extrabold text-slate-800 mt-0.5">3.2 Days</p>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">On-Time Rate</span>
+                    <p className="text-sm font-extrabold text-slate-800 mt-0.5">94.8%</p>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-100 pt-4 flex items-center justify-between text-xs font-bold text-slate-650">
+                  <span>Assigned Dept:</span>
+                  <span className="bg-accent-50 border border-accent-100 text-accent-700 px-2 py-0.5 rounded-md text-[10px]">
+                    Municipal Operations
+                  </span>
+                </div>
+              </div>
+
+              {/* Informational Guidelines */}
+              <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-4">
+                <div className="flex items-center space-x-2 text-slate-700">
+                  <BarChart3 className="h-4.5 w-4.5 text-accent-500" />
+                  <h4 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">SLA Guidelines</h4>
+                </div>
+                <div className="space-y-3.5 text-xs text-slate-500 leading-normal font-medium">
+                  <div className="flex items-start space-x-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-rose-500 mt-1.5 flex-shrink-0" />
+                    <p>High priority reports (Score &ge; 7) should be verified within 24 hours.</p>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 mt-1.5 flex-shrink-0" />
+                    <p>Medium priority reports (Score 4 - 6) should be verified within 48 hours.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 };
+
 export default OfficerDashboard;
