@@ -21,11 +21,19 @@ const AdminDashboard = () => {
   const [complaints, setComplaints] = useState([]);
 
   const [departmentFilter, setDepartmentFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
 
-  const filteredComplaints =
-    departmentFilter === "All"
-      ? complaints
-      : complaints.filter((c) => c.department === departmentFilter);
+  const filteredComplaints = complaints.filter((c) => {
+    const departmentMatch =
+      departmentFilter === "All" ||
+      c.department === departmentFilter;
+
+    const statusMatch =
+      statusFilter === "All" ||
+      c.status === statusFilter;
+
+    return departmentMatch && statusMatch;
+  });
 
   const totalComplaints = complaints.length;
 
@@ -314,6 +322,19 @@ const AdminDashboard = () => {
                           <option value="Transport Department">Transport Department</option>
                           <option value="Waste Management Department">Waste Management Department</option>
                           <option value="Water Department">Water Department</option>
+                        </select>
+
+                        <select
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                          className="border border-slate-300 rounded-lg px-3 py-2 text-sm ml-3"
+                        >
+                          <option value="All">All Statuses</option>
+                          <option value="Reported">Reported</option>
+                          <option value="Verified">Verified</option>
+                          <option value="Assigned">Assigned</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Resolved">Resolved</option>
                         </select>
                       </div>
                       <span className="text-[10px] bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full text-slate-500 font-bold">
