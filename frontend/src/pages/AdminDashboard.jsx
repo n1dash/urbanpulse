@@ -22,6 +22,7 @@ const AdminDashboard = () => {
 
   const [departmentFilter, setDepartmentFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [priorityFilter, setPriorityFilter] = useState("All");
 
   const filteredComplaints = complaints.filter((c) => {
     const departmentMatch =
@@ -32,7 +33,15 @@ const AdminDashboard = () => {
       statusFilter === "All" ||
       c.status === statusFilter;
 
-    return departmentMatch && statusMatch;
+    const priorityMatch =
+      priorityFilter === "All" ||
+      (c.priority_score >= 70 && priorityFilter === "High") ||
+      (c.priority_score >= 40 &&
+        c.priority_score < 70 &&
+        priorityFilter === "Medium") ||
+      (c.priority_score < 40 && priorityFilter === "Low");
+
+    return departmentMatch && statusMatch && priorityMatch;
   });
 
   const totalComplaints = complaints.length;
@@ -310,7 +319,7 @@ const AdminDashboard = () => {
                       <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
                         Complaint Registry
                       </h3>
-                      <div className="mt-3">
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
                         <select
                           value={departmentFilter}
                           onChange={(e) => setDepartmentFilter(e.target.value)}
@@ -335,6 +344,17 @@ const AdminDashboard = () => {
                           <option value="Assigned">Assigned</option>
                           <option value="In Progress">In Progress</option>
                           <option value="Resolved">Resolved</option>
+                        </select>
+
+                        <select
+                          value={priorityFilter}
+                          onChange={(e) => setPriorityFilter(e.target.value)}
+                          className="border border-slate-300 rounded-lg px-3 py-2 text-sm ml-3"
+                        >
+                          <option value="All">All Priorities</option>
+                          <option value="High">High</option>
+                          <option value="Medium">Medium</option>
+                          <option value="Low">Low</option>
                         </select>
                       </div>
                       <span className="text-[10px] bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full text-slate-500 font-bold">
