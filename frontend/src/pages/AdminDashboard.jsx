@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { adminService } from '../services/api';
+import { adminService, complaintService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
@@ -8,6 +8,7 @@ import Error from '../components/Error';
 import { Building2, Users, UserCog, Plus, ShieldAlert, Calendar, CheckSquare, ListTodo, Check } from 'lucide-react';
 
 const AdminDashboard = () => {
+  console.log("ADMIN DASHBOARD LOADED");
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -15,6 +16,13 @@ const AdminDashboard = () => {
   
   const [departments, setDepartments] = useState([]);
   const [users, setUsers] = useState([]);
+  const [complaints, setComplaints] = useState([]);
+
+  const totalComplaints = complaints.length;
+
+  const resolvedComplaints = complaints.filter(
+    (c) => c.status === "Resolved"
+  ).length;
   const [activeTab, setActiveTab] = useState('Departments');
 
   // New Department Form State
@@ -26,10 +34,15 @@ const AdminDashboard = () => {
     setLoading(true);
     setError('');
     try {
-      const deptsData = await adminService.getDepartments();
-      const usersData = await adminService.getUsers();
+      const [deptsData, usersData, complaintsData] = await Promise.all([
+        adminService.getDepartments(),
+        adminService.getUsers(),
+        complaintService.getComplaints()
+      ]);
+
       setDepartments(deptsData);
       setUsers(usersData);
+      setComplaints(complaintsData);
     } catch (err) {
       setError(err.message || 'Failed to load admin data. Please check your connection and try again.');
     } finally {
@@ -133,7 +146,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* Quick Metrics Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 select-none">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 select-none">
             <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
               <div className="p-3 bg-slate-50 text-slate-500 rounded-xl border border-slate-100">
                 <Building2 className="h-6 w-6 stroke-[1.5]" />
@@ -159,15 +172,30 @@ const AdminDashboard = () => {
                 <CheckSquare className="h-6 w-6 stroke-[1.5]" />
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Operational Health</p>
-                <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">Optimal</h3>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Complaints</p>
+                <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{totalComplaints}</h3>
+                <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
+                  <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
+                    <Check className="h-6 w-6 stroke-[1.5]" />
+                  </div>
+
+                   <div>
+                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                       Resolved Complaints
+                     </p>
+
+                     <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">
+                       {resolvedComplaints}
+                     </h3>
+                   </div>
+                 </div>
               </div>
             </div>
           </div>
 
           {/* Tab Selection */}
           <div className="flex border-b border-slate-200 select-none">
-            {['Departments', 'User Accounts'].map((tab) => (
+            {['Departments', 'User Accounts', 'Complaints'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -222,7 +250,7 @@ const AdminDashboard = () => {
                       ))}
                     </div>
                   </div>
-                ) : (
+                ) : activeTab === 'User Accounts' ? (
                   <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-5">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                       <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">User Registry</h3>
@@ -254,6 +282,46 @@ const AdminDashboard = () => {
                               <option value="Senior Officer">Senior Officer</option>
                               <option value="Admin">Admin</option>
                             </select>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-5">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                      <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+                        Complaint Registry
+                      </h3>
+                      <span className="text-[10px] bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full text-slate-500 font-bold">
+                        {complaints.length} complaint{complaints.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+
+                    <div className="divide-y divide-slate-100">
+                      {complaints.map((c) => (
+                        <div
+                          key={c.id}
+                          className="py-3 flex justify-between items-center"
+                        >
+                          <div>
+                            <h4 className="font-bold text-sm text-slate-800">
+                              {c.title}
+                            </h4>
+
+                            <p className="text-xs text-slate-500">
+                              {c.department} • {c.status}
+                            </p>
+                          </div>
+
+                          <div className="text-right">
+                            <p className="text-xs font-bold text-slate-700">
+                              #{c.id}
+                            </p>
+
+                            <p className="text-xs text-slate-400">
+                              {c.priority}
+                            </p>
                           </div>
                         </div>
                       ))}

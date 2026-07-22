@@ -37,11 +37,17 @@ const Login = () => {
 
     try {
       const user = await login(formData.username, formData.password);
-      if (user.role === 'Citizen') navigate('/citizen/dashboard');
-      else if (user.role === 'Officer') navigate('/officer/dashboard');
-      else if (user.role === 'Senior Officer') navigate('/senior-officer/dashboard');
-      else if (user.role === 'Admin') navigate('/admin/dashboard');
-      else navigate('/public-complaints');
+      if (user.role === 'CITIZEN') {
+        navigate('/citizen/dashboard');
+      } else if (user.role === 'OFFICER') {
+        navigate('/officer/dashboard');
+      } else if (user.role === 'SENIOR_OFFICER') {
+        navigate('/senior-officer/dashboard');
+      } else if (user.role === 'ADMIN') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/public-complaints');
+      }
     } catch (err) {
       setError(err.message || 'Login failed. Please verify credentials.');
     } finally {

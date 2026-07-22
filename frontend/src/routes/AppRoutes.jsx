@@ -19,13 +19,13 @@ import Loading from '../components/Loading';
 // Helper to determine home dashboard based on role
 export const getDefaultDashboard = (role) => {
   switch (role) {
-    case 'Citizen':
+    case 'CITIZEN':
       return '/citizen/dashboard';
-    case 'Officer':
+    case 'OFFICER':
       return '/officer/dashboard';
-    case 'Senior Officer':
+    case 'SENIOR_OFFICER':
       return '/senior-officer/dashboard';
-    case 'Admin':
+    case 'ADMIN':
       return '/admin/dashboard';
     default:
       return '/public-complaints';
@@ -105,7 +105,7 @@ const AppRoutes = () => {
       <Route 
         path="/citizen/dashboard" 
         element={
-          <ProtectedRoute allowedRoles={['Citizen']}>
+          <ProtectedRoute allowedRoles={['CITIZEN']}>
             <CitizenDashboard />
           </ProtectedRoute>
         } 
@@ -113,7 +113,7 @@ const AppRoutes = () => {
       <Route 
         path="/citizen/raise" 
         element={
-          <ProtectedRoute allowedRoles={['Citizen']}>
+          <ProtectedRoute allowedRoles={['CITIZEN']}>
             <RaiseComplaint />
           </ProtectedRoute>
         } 
@@ -123,7 +123,7 @@ const AppRoutes = () => {
       <Route 
         path="/complaints/:id" 
         element={
-          <ProtectedRoute allowedRoles={['Citizen', 'Officer', 'Senior Officer', 'Admin']}>
+          <ProtectedRoute allowedRoles={['CITIZEN', 'OFFICER', 'SENIOR_OFFICER', 'ADMIN']}>
             <ComplaintDetails />
           </ProtectedRoute>
         } 
@@ -133,7 +133,7 @@ const AppRoutes = () => {
       <Route 
         path="/officer/dashboard" 
         element={
-          <ProtectedRoute allowedRoles={['Officer']}>
+          <ProtectedRoute allowedRoles={['OFFICER']}>
             <OfficerDashboard />
           </ProtectedRoute>
         } 
@@ -143,7 +143,7 @@ const AppRoutes = () => {
       <Route 
         path="/senior-officer/dashboard" 
         element={
-          <ProtectedRoute allowedRoles={['Senior Officer']}>
+          <ProtectedRoute allowedRoles={['SENIOR_OFFICER']}>
             <SeniorOfficerDashboard />
           </ProtectedRoute>
         } 
@@ -153,7 +153,7 @@ const AppRoutes = () => {
       <Route 
         path="/admin/dashboard" 
         element={
-          <ProtectedRoute allowedRoles={['Admin']}>
+          <ProtectedRoute allowedRoles={['ADMIN']}>
             <AdminDashboard />
           </ProtectedRoute>
         } 

@@ -9,14 +9,14 @@ import Error from '../components/Error';
 import { Globe, MapPin, ListTodo, Filter, CheckSquare, Search } from 'lucide-react';
 
 const DEPARTMENTS = [
-  'All',
-  'Roads & Highways',
-  'Water & Sanitation',
-  'Electricity & Power',
-  'Waste Management',
-  'Transport & Traffic',
-  'Public Safety',
-  'Others'
+  { label: 'All Departments', value: 'All' },
+  { label: 'Roads & Highways', value: 'Road department' },
+  { label: 'Water & Sanitation', value: 'Water department' },
+  { label: 'Electricity & Power', value: 'Electricity department' },
+  { label: 'Waste Management', value: 'Waste department' },
+  { label: 'Transport & Traffic', value: 'Transport department' },
+  { label: 'Public Safety', value: 'Public safety department' },
+  { label: 'Others', value: 'Other department' },
 ];
 
 const PublicComplaints = () => {
@@ -100,6 +100,8 @@ const PublicComplaints = () => {
       prev.map((c) => (c.id === id ? { ...c, upvotes: c.upvotes + 1, is_upvoted: true } : c))
     );
   };
+
+  console.log(complaints);
 
   const filteredComplaints = complaints.filter((c) => {
     const matchesSearch = c.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -200,7 +202,7 @@ const PublicComplaints = () => {
                   className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 cursor-pointer outline-none"
                 >
                   <option value="All">All Statuses</option>
-                  <option value="Created">Created</option>
+                  <option value="Reported">Reported</option>
                   <option value="Verified">Verified</option>
                   <option value="Assigned">Assigned</option>
                   <option value="In Progress">In Progress</option>
@@ -215,16 +217,16 @@ const PublicComplaints = () => {
               <div className="flex flex-wrap gap-2 overflow-x-auto pb-1">
                 {DEPARTMENTS.map((dept) => (
                   <button
-                    key={dept}
+                    key={dept.value}
                     type="button"
-                    onClick={() => setDeptFilter(dept)}
+                    onClick={() => setDeptFilter(dept.value)}
                     className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
-                      deptFilter === dept 
+                      deptFilter === dept.value
                         ? 'bg-accent-600 border-accent-600 text-white shadow-sm'
                         : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100/50 hover:text-slate-800'
                     }`}
                   >
-                    {dept === 'All' ? 'All Departments' : dept}
+                    {dept.label}
                   </button>
                 ))}
               </div>
