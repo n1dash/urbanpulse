@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from "react-router-dom";
 import { adminService, complaintService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
@@ -10,6 +11,7 @@ import { Building2, Users, UserCog, Plus, ShieldAlert, Calendar, CheckSquare, Li
 const AdminDashboard = () => {
   console.log("ADMIN DASHBOARD LOADED");
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -309,19 +311,52 @@ const AdminDashboard = () => {
                               {c.title}
                             </h4>
 
-                            <p className="text-xs text-slate-500">
-                              {c.department} • {c.status}
-                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-slate-500">
+                                {c.department}
+                              </span>
+
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  c.status === "Resolved"
+                                    ? "bg-green-100 text-green-700"
+                                    : c.status === "In Progress"
+                                    ? "bg-blue-100 text-blue-700"
+                                    : c.status === "Assigned"
+                                    ? "bg-purple-100 text-purple-700"
+                                    : c.status === "Verified"
+                                    ? "bg-yellow-100 text-yellow-700"
+                                    : "bg-gray-100 text-gray-700"
+                                }`}
+                              >
+                                {c.status}
+                              </span>
+                            </div>
                           </div>
 
-                          <div className="text-right">
+                          <div className="text-right space-y-2">
                             <p className="text-xs font-bold text-slate-700">
                               #{c.id}
                             </p>
 
-                            <p className="text-xs text-slate-400">
+                            <span
+                              className={`inline-block px-2 py-1 rounded-full text-[10px] font-bold ${
+                                c.priority === "High"
+                                  ? "bg-red-100 text-red-700"
+                                  : c.priority === "Medium"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-green-100 text-green-700"
+                              }`}
+                            >
                               {c.priority}
-                            </p>
+                            </span>
+
+                            <button
+                              onClick={() => navigate(`/complaints/${c.id}`)}
+                              className="block w-full bg-accent-600 hover:bg-accent-700 text-white text-[10px] font-bold py-1.5 rounded-lg transition-colors"
+                            >
+                              View
+                            </button>
                           </div>
                         </div>
                       ))}
