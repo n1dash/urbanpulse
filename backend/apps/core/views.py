@@ -7,6 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+from apps.accounts.models import UserRole
 
 from apps.core.models import (
     Department,
@@ -92,9 +93,30 @@ class ComplaintViewSet(viewsets.ModelViewSet):
     ordering_fields = ["created_at", "priority_score", "upvote_count"]
 
     def get_queryset(self):
-        # Annotate with upvote_count to support sorting by votes count
-        queryset = Complaint.objects.annotate(upvote_count=Count("votes"))
-        return queryset.order_by("-created_at")
+        """
+        Return complaints based on the logged-in user's role.
+        """
+
+        queryset = Complaint.objects.annotate(
+            upvote_count=Count("votes")
+        ).order_by("-created_at")
+
+        user = self.request.user
+
+        # Admin sees everything
+        if user.is_superuser or user.role == UserRole.ADMIN:
+            return queryset
+
+        # Citizen sees only their own complaints
+        if user.role == UserRole.CITIZEN:
+            return queryset.filter(user=user)
+
+        # Officer / Senior Officer
+        if hasattr(user, "officer_profile"):
+            officer = user.officer_profile
+            return queryset.filter(department=officer.department)
+
+        return queryset.none()
 
     def perform_create(self, serializer):
         with transaction.atomic():
