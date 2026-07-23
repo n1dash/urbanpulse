@@ -6,7 +6,20 @@ import Sidebar from '../components/Sidebar';
 import ComplaintCard from '../components/ComplaintCard';
 import Loading from '../components/Loading';
 import Error from '../components/Error';
-import { ListTodo, CheckSquare, Clock, Filter, AlertTriangle, Calendar, Award, BarChart3 } from 'lucide-react';
+import {
+  Briefcase,
+  Clock,
+  BadgeCheck,
+  AlertTriangle,
+  Filter,
+  Calendar,
+  Search,
+  X,
+  ClipboardCheck,
+  ShieldCheck,
+  CheckCircle2,
+  Inbox
+} from 'lucide-react';
 
 const OfficerDashboard = () => {
   const { user } = useAuth();
@@ -14,10 +27,11 @@ const OfficerDashboard = () => {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   // Filtering states
   const [statusFilter, setStatusFilter] = useState('All');
   const [priorityFilter, setPriorityFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchAssignedComplaints = async () => {
     setLoading(true);
@@ -90,10 +104,10 @@ const OfficerDashboard = () => {
     );
   };
 
-  // Filter complaints list based on filters select dropdown
+  // Filter complaints list based on filters + search (frontend-only, existing logic preserved)
   const filteredComplaints = complaints.filter((c) => {
     const statusMatch = statusFilter === 'All' || c.status === statusFilter;
-    
+
     let priorityMatch = true;
     if (priorityFilter !== 'All') {
       const score = Number(c.priority_score) || 0;
@@ -102,16 +116,34 @@ const OfficerDashboard = () => {
       else if (priorityFilter === 'Low') priorityMatch = score < 4;
     }
 
-    return statusMatch && priorityMatch;
+    const query = searchQuery.trim().toLowerCase();
+    const searchMatch =
+      query === '' ||
+      c.title?.toLowerCase().includes(query) ||
+      c.description?.toLowerCase().includes(query) ||
+      c.location_name?.toLowerCase().includes(query);
+
+    return statusMatch && priorityMatch && searchMatch;
   });
+
+  const hasActiveFilters = statusFilter !== 'All' || priorityFilter !== 'All' || searchQuery.trim() !== '';
+
+  const clearFilters = () => {
+    setStatusFilter('All');
+    setPriorityFilter('All');
+    setSearchQuery('');
+  };
 
   // Calculate metrics
   const totalCount = complaints.length;
-  const pendingCount = complaints.filter(
-    (c) => c.status && c.status.toLowerCase() !== 'resolved'
+  const inProgressCount = complaints.filter(
+    (c) => (c.status || '').toLowerCase() === 'in progress'
   ).length;
-  const resolvedCount = complaints.filter(
-    (c) => c.status && c.status.toLowerCase() === 'resolved'
+  const completedCount = complaints.filter(
+    (c) => (c.status || '').toLowerCase() === 'resolved'
+  ).length;
+  const highPriorityCount = complaints.filter(
+    (c) => (Number(c.priority_score) || 0) >= 7
   ).length;
 
   const getGreeting = () => {
@@ -134,20 +166,20 @@ const OfficerDashboard = () => {
       <Sidebar isOpen={sidebarOpen} onCloseSideBar={() => setSidebarOpen(false)} />
 
       <main className="flex-1 md:pl-64 pt-16 min-h-screen">
-        <div className="p-6 md:p-8 max-w-7xl w-full mx-auto space-y-8 animate-fade-in">
+        <div className="p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6 md:space-y-8 animate-fade-in">
           {/* Welcoming Header Panel */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-6">
             <div className="space-y-1">
-              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
                 {getGreeting()}, {user?.username || 'Officer'} 👋
               </h2>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Here's what's happening across your city today.
+                Manage your assigned complaints and keep citizens informed with timely progress updates.
               </p>
             </div>
-            
+
             <div className="flex items-center space-x-3 self-start sm:self-auto">
-              <span className="inline-flex items-center text-[10px] font-bold text-slate-450 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
+              <span className="inline-flex items-center text-[10px] font-bold text-slate-500 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
                 <Calendar className="h-3.5 w-3.5 mr-1.5 text-slate-450 stroke-[2.5]" />
                 {currentFormattedDate}
               </span>
@@ -159,136 +191,202 @@ const OfficerDashboard = () => {
             {/* Left Column: Metrics & Filter Bar & Complaints lists */}
             <div className="lg:col-span-2 space-y-6">
               {/* Quick Metrics Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 select-none">
-                {/* Total */}
-                <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
-                  <div className="p-3 bg-slate-50 text-slate-500 rounded-xl border border-slate-100">
-                    <ListTodo className="h-6 w-6 stroke-[1.5]" />
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5 select-none">
+                {/* Assigned */}
+                <div className="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                  <div className="p-3 bg-slate-50 text-slate-500 rounded-xl border border-slate-100 flex-shrink-0">
+                    <Briefcase className="h-5 w-5 sm:h-6 sm:w-6 stroke-[1.5]" />
                   </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Assigned Issues</p>
-                    <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{totalCount}</h3>
-                  </div>
-                </div>
-
-                {/* Pending */}
-                <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
-                  <div className="p-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-100">
-                    <Clock className="h-6 w-6 stroke-[1.5]" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">In Progress</p>
-                    <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{pendingCount}</h3>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">Assigned</p>
+                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-0.5">{totalCount}</h3>
                   </div>
                 </div>
 
-                {/* Resolved */}
-                <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
-                  <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
-                    <CheckSquare className="h-6 w-6 stroke-[1.5]" />
+                {/* In Progress */}
+                <div className="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                  <div className="p-3 bg-sky-50 text-sky-600 rounded-xl border border-sky-100 flex-shrink-0">
+                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 stroke-[1.5]" />
                   </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Resolved</p>
-                    <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{resolvedCount}</h3>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">In Progress</p>
+                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-0.5">{inProgressCount}</h3>
+                  </div>
+                </div>
+
+                {/* Completed */}
+                <div className="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                  <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 flex-shrink-0">
+                    <BadgeCheck className="h-5 w-5 sm:h-6 sm:w-6 stroke-[1.5]" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">Completed</p>
+                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-0.5">{completedCount}</h3>
+                  </div>
+                </div>
+
+                {/* High Priority */}
+                <div className="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                  <div className="p-3 bg-rose-50 text-rose-600 rounded-xl border border-rose-100 flex-shrink-0">
+                    <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 stroke-[1.5]" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">High Priority</p>
+                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-0.5">{highPriorityCount}</h3>
                   </div>
                 </div>
               </div>
 
-              {/* Filters Bar card */}
-              <div className="bg-white border border-slate-200 p-4.5 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              {/* Search & Filters Bar */}
+              <div className="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl shadow-sm space-y-3.5">
                 <div className="flex items-center space-x-2 text-slate-700">
                   <Filter className="h-4 w-4 text-accent-500 stroke-[2.5]" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Filter Assigned Logs</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Work Queue Filters</span>
                 </div>
 
-                <div className="flex flex-wrap gap-2.5">
-                  {/* Status */}
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="bg-slate-55 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-650 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 cursor-pointer outline-none"
-                  >
-                    <option value="All">All Statuses</option>
-                    <option value="Created">Created</option>
-                    <option value="Verified">Verified</option>
-                    <option value="Assigned">Assigned</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Resolved">Resolved</option>
-                  </select>
+                <div className="flex flex-col sm:flex-row gap-2.5">
+                  {/* Search input */}
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search by title, description, or location..."
+                      className="w-full pl-10 pr-9 py-2 text-xs sm:text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-xl placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-colors"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        aria-label="Clear search"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
 
-                  {/* Priority */}
-                  <select
-                    value={priorityFilter}
-                    onChange={(e) => setPriorityFilter(e.target.value)}
-                    className="bg-slate-55 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-650 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 cursor-pointer outline-none"
-                  >
-                    <option value="All">All Priorities</option>
-                    <option value="High">High (Score &ge; 7)</option>
-                    <option value="Medium">Medium (Score 4 - 6)</option>
-                    <option value="Low">Low (Score &lt; 4)</option>
-                  </select>
+                  <div className="flex flex-wrap gap-2.5">
+                    {/* Status */}
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-650 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 cursor-pointer outline-none"
+                    >
+                      <option value="All">All Statuses</option>
+                      <option value="Created">Created</option>
+                      <option value="Verified">Verified</option>
+                      <option value="Assigned">Assigned</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Resolved">Resolved</option>
+                    </select>
+
+                    {/* Priority */}
+                    <select
+                      value={priorityFilter}
+                      onChange={(e) => setPriorityFilter(e.target.value)}
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-650 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 cursor-pointer outline-none"
+                    >
+                      <option value="All">All Priorities</option>
+                      <option value="High">High (Score &ge; 7)</option>
+                      <option value="Medium">Medium (Score 4 - 6)</option>
+                      <option value="Low">Low (Score &lt; 4)</option>
+                    </select>
+
+                    {hasActiveFilters && (
+                      <button
+                        onClick={clearFilters}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 bg-slate-50 hover:bg-rose-50 rounded-xl px-3 py-2 transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Clear
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Assigned List */}
               <div className="space-y-4">
                 <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center">
-                  <ListTodo className="h-4.5 w-4.5 text-accent-500 mr-2" />
-                  Your Assigned Audit Worklist
+                  <ClipboardCheck className="h-4.5 w-4.5 text-accent-500 mr-2" />
+                  My Assigned Complaints
                 </h3>
 
                 {loading ? (
                   <div className="bg-white rounded-2xl border border-slate-200 p-12">
-                    <Loading message="Syncing assignments checklist..." />
+                    <Loading message="Loading your assigned complaints..." />
                   </div>
                 ) : error ? (
                   <Error message={error} onRetry={fetchAssignedComplaints} />
+                ) : complaints.length === 0 ? (
+                  <div className="bg-white rounded-2xl border border-slate-200 p-12 sm:p-16 text-center flex flex-col items-center justify-center">
+                    <div className="p-4 bg-slate-50 text-slate-300 rounded-2xl border border-slate-100 mb-4">
+                      <Inbox className="h-8 w-8 stroke-[1.5]" />
+                    </div>
+                    <h4 className="text-sm font-extrabold text-slate-700 mb-1.5">No assigned complaints yet</h4>
+                    <p className="text-xs font-semibold text-slate-400 max-w-sm leading-relaxed">
+                      New assignments from your Senior Officer will appear here.
+                    </p>
+                  </div>
                 ) : filteredComplaints.length === 0 ? (
                   <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center flex flex-col items-center justify-center">
                     <div className="p-4 bg-slate-50 text-slate-400 rounded-full mb-4">
                       <AlertTriangle className="h-8 w-8 stroke-[1.2]" />
                     </div>
-                    <h4 className="font-bold text-slate-900 mb-1">No assignments found</h4>
-                    <p className="text-xs text-slate-500 max-w-sm leading-relaxed">
-                      No civic reports found in your queue matching the selected filters.
+                    <h4 className="font-bold text-slate-900 mb-1">No matching complaints</h4>
+                    <p className="text-xs text-slate-500 max-w-sm leading-relaxed mb-4">
+                      No complaints in your queue match the selected search or filters.
                     </p>
+                    <button
+                      onClick={clearFilters}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-xl px-4 py-2 transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      Clear all filters
+                    </button>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {filteredComplaints.map((complaint) => (
-                      <ComplaintCard
-                        key={complaint.id}
-                        complaint={complaint}
-                        onUpvoteSuccess={handleUpvoteSuccess}
-                      />
+                      <div key={complaint.id} className="transition-transform duration-200 hover:-translate-y-1">
+                        <ComplaintCard
+                          complaint={complaint}
+                          onUpvoteSuccess={handleUpvoteSuccess}
+                        />
+                      </div>
                     ))}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Right Column: Performance Summary */}
+            {/* Right Column: Responsibilities & Priority Guidelines */}
             <div className="space-y-6">
-              {/* Performance Card */}
+              {/* Today's Responsibilities */}
               <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-4 select-none">
                 <div className="flex items-center space-x-2 text-slate-700">
-                  <Award className="h-5 w-5 text-accent-500 stroke-[2.5]" />
-                  <h4 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Your Audit Performance</h4>
+                  <ShieldCheck className="h-5 w-5 text-accent-500 stroke-[2.5]" />
+                  <h4 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Today's Responsibilities</h4>
                 </div>
                 <p className="text-[11px] text-slate-400 leading-normal">
-                  Your current department performance stats, tracked relative to citizen SLA guidelines.
+                  A quick checklist to guide how you work through your assigned complaints today.
                 </p>
 
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Avg SLA Time</span>
-                    <p className="text-sm font-extrabold text-slate-800 mt-0.5">3.2 Days</p>
-                  </div>
-                  <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">On-Time Rate</span>
-                    <p className="text-sm font-extrabold text-slate-800 mt-0.5">94.8%</p>
-                  </div>
-                </div>
+                <ul className="space-y-3 pt-1">
+                  {[
+                    'Review assigned complaints',
+                    'Visit complaint location',
+                    'Update complaint progress',
+                    'Resolve issues within SLA',
+                    'Keep citizens informed'
+                  ].map((task) => (
+                    <li key={task} className="flex items-start space-x-2.5">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0 stroke-[2]" />
+                      <span className="text-xs font-semibold text-slate-650 leading-relaxed">{task}</span>
+                    </li>
+                  ))}
+                </ul>
 
                 <div className="border-t border-slate-100 pt-4 flex items-center justify-between text-xs font-bold text-slate-650">
                   <span>Assigned Dept:</span>
@@ -298,20 +396,30 @@ const OfficerDashboard = () => {
                 </div>
               </div>
 
-              {/* Informational Guidelines */}
+              {/* Priority Guidelines */}
               <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-4">
                 <div className="flex items-center space-x-2 text-slate-700">
-                  <BarChart3 className="h-4.5 w-4.5 text-accent-500" />
-                  <h4 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">SLA Guidelines</h4>
+                  <AlertTriangle className="h-4.5 w-4.5 text-accent-500" />
+                  <h4 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Priority Guidelines</h4>
                 </div>
                 <div className="space-y-3.5 text-xs text-slate-500 leading-normal font-medium">
-                  <div className="flex items-start space-x-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-rose-500 mt-1.5 flex-shrink-0" />
-                    <p>High priority reports (Score &ge; 7) should be verified within 24 hours.</p>
+                  <div className="flex items-start space-x-2.5">
+                    <span className="h-2 w-2 rounded-full bg-rose-500 mt-1 flex-shrink-0" />
+                    <p>
+                      <span className="font-bold text-slate-700">High Priority</span> — Resolve within 24 hours.
+                    </p>
                   </div>
-                  <div className="flex items-start space-x-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 mt-1.5 flex-shrink-0" />
-                    <p>Medium priority reports (Score 4 - 6) should be verified within 48 hours.</p>
+                  <div className="flex items-start space-x-2.5">
+                    <span className="h-2 w-2 rounded-full bg-amber-500 mt-1 flex-shrink-0" />
+                    <p>
+                      <span className="font-bold text-slate-700">Medium Priority</span> — Resolve within 48 hours.
+                    </p>
+                  </div>
+                  <div className="flex items-start space-x-2.5">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 mt-1 flex-shrink-0" />
+                    <p>
+                      <span className="font-bold text-slate-700">Low Priority</span> — Resolve within 72 hours.
+                    </p>
                   </div>
                 </div>
               </div>

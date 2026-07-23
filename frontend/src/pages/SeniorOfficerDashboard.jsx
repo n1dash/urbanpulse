@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { complaintService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
@@ -6,17 +6,27 @@ import Sidebar from '../components/Sidebar';
 import ComplaintCard from '../components/ComplaintCard';
 import Loading from '../components/Loading';
 import Error from '../components/Error';
-import { 
-  BarChart3, 
-  AlertOctagon, 
-  History, 
-  Hourglass, 
-  ClipboardList, 
-  TrendingUp,
+import {
+  ClipboardList,
+  Hourglass,
+  Activity,
+  CheckCircle2,
   Calendar,
-  ChevronRight,
-  TrendingDown
+  Search,
+  SlidersHorizontal,
+  X,
+  Inbox,
+  FileSearch
 } from 'lucide-react';
+
+const PRIORITY_OPTIONS = ['All', 'High', 'Medium', 'Low'];
+
+const getPriorityLevel = (score) => {
+  const n = Number(score);
+  if (n >= 8) return 'High';
+  if (n >= 5) return 'Medium';
+  return 'Low';
+};
 
 const SeniorOfficerDashboard = () => {
   const { user } = useAuth();
@@ -24,9 +34,11 @@ const SeniorOfficerDashboard = () => {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  // Tab control
-  const [activeTab, setActiveTab] = useState('Overview');
+
+  // Frontend-only search & filter controls
+  const [searchQuery, setSearchQuery] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
 
   const fetchDepartmentComplaints = async () => {
     setLoading(true);
@@ -112,23 +124,42 @@ const SeniorOfficerDashboard = () => {
     );
   };
 
-  // Derive specialized complaint groupings
-  const escalatedComplaints = complaints.filter(
-    (c) => (Number(c.priority_score) >= 8 || c.upvotes >= 50) && c.status.toLowerCase() !== 'resolved'
-  );
+  // Core KPI metrics
+  const totalCount = complaints.length;
+  const resolvedCount = complaints.filter((c) => (c.status || '').toLowerCase() === 'resolved').length;
+  const inProgressCount = complaints.filter((c) => (c.status || '').toLowerCase() === 'in progress').length;
+  const pendingCount = totalCount - resolvedCount - inProgressCount;
 
-  const delayedComplaints = complaints.filter((c) => {
-    if (c.status.toLowerCase() === 'resolved') return false;
-    const createdAt = new Date(c.created_at);
-    const diffTime = Math.abs(Date.now() - createdAt);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays >= 7; 
-  });
+  // Distinct statuses present in the data, used to build the status filter options
+  const statusOptions = useMemo(() => {
+    const distinct = Array.from(new Set(complaints.map((c) => c.status).filter(Boolean)));
+    return ['All', ...distinct];
+  }, [complaints]);
 
-  // Calculate metrics
-  const totalDepartmentCount = complaints.length;
-  const resolvedCount = complaints.filter((c) => c.status.toLowerCase() === 'resolved').length;
-  const resolutionRate = totalDepartmentCount > 0 ? Math.round((resolvedCount / totalDepartmentCount) * 100) : 0;
+  // Apply frontend-only search + filters
+  const filteredComplaints = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return complaints.filter((c) => {
+      const matchesSearch =
+        query === '' ||
+        c.title?.toLowerCase().includes(query) ||
+        c.description?.toLowerCase().includes(query) ||
+        c.location_name?.toLowerCase().includes(query);
+
+      const matchesPriority = priorityFilter === 'All' || getPriorityLevel(c.priority_score) === priorityFilter;
+      const matchesStatus = statusFilter === 'All' || c.status === statusFilter;
+
+      return matchesSearch && matchesPriority && matchesStatus;
+    });
+  }, [complaints, searchQuery, priorityFilter, statusFilter]);
+
+  const hasActiveFilters = searchQuery.trim() !== '' || priorityFilter !== 'All' || statusFilter !== 'All';
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setPriorityFilter('All');
+    setStatusFilter('All');
+  };
 
   const getGreeting = () => {
     const hr = new Date().getHours();
@@ -144,245 +175,206 @@ const SeniorOfficerDashboard = () => {
     day: 'numeric'
   });
 
+  const statCards = [
+    {
+      key: 'total',
+      label: 'Total Complaints',
+      value: totalCount,
+      icon: ClipboardList,
+      iconBg: 'bg-slate-50',
+      iconColor: 'text-slate-500',
+      iconBorder: 'border-slate-100'
+    },
+    {
+      key: 'pending',
+      label: 'Pending',
+      value: pendingCount,
+      icon: Hourglass,
+      iconBg: 'bg-amber-50',
+      iconColor: 'text-amber-600',
+      iconBorder: 'border-amber-100'
+    },
+    {
+      key: 'in-progress',
+      label: 'In Progress',
+      value: inProgressCount,
+      icon: Activity,
+      iconBg: 'bg-sky-50',
+      iconColor: 'text-sky-600',
+      iconBorder: 'border-sky-100'
+    },
+    {
+      key: 'resolved',
+      label: 'Resolved',
+      value: resolvedCount,
+      icon: CheckCircle2,
+      iconBg: 'bg-emerald-50',
+      iconColor: 'text-emerald-600',
+      iconBorder: 'border-emerald-100'
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-slate-50 flex">
       <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
       <Sidebar isOpen={sidebarOpen} onCloseSideBar={() => setSidebarOpen(false)} />
 
       <main className="flex-1 md:pl-64 pt-16 min-h-screen">
-        <div className="p-6 md:p-8 max-w-7xl w-full mx-auto space-y-8 animate-fade-in">
+        <div className="p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6 md:space-y-8 animate-fade-in">
           {/* Header Greeting Section */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-6">
             <div className="space-y-1">
-              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
                 {getGreeting()}, {user?.username || 'Senior Officer'} 👋
               </h2>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                 Here's what's happening across your city today.
               </p>
             </div>
-            
+
             <div className="flex items-center space-x-3 self-start sm:self-auto">
-              <span className="inline-flex items-center text-[10px] font-bold text-slate-450 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
+              <span className="inline-flex items-center text-[10px] font-bold text-slate-500 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
                 <Calendar className="h-3.5 w-3.5 mr-1.5 text-slate-450 stroke-[2.5]" />
                 {currentFormattedDate}
               </span>
             </div>
           </div>
 
-          {/* Statistics Metrics Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 select-none">
-            {/* Total */}
-            <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
-              <div className="p-3 bg-slate-50 text-slate-500 rounded-xl border border-slate-100">
-                <ClipboardList className="h-6 w-6 stroke-[1.5]" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Filings</p>
-                <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{totalDepartmentCount}</h3>
-              </div>
-            </div>
-
-            {/* Escalated */}
-            <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
-              <div className="p-3 bg-rose-50 text-rose-600 rounded-xl border border-rose-100">
-                <AlertOctagon className="h-6 w-6 stroke-[1.5]" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Escalated Queue</p>
-                <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{escalatedComplaints.length}</h3>
-              </div>
-            </div>
-
-            {/* Delayed */}
-            <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
-              <div className="p-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-100">
-                <Hourglass className="h-6 w-6 stroke-[1.5]" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Delayed &gt; 7 Days</p>
-                <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{delayedComplaints.length}</h3>
-              </div>
-            </div>
-
-            {/* Resolution Rate */}
-            <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
-              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
-                <TrendingUp className="h-6 w-6 stroke-[1.5]" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Resolution Rate</p>
-                <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{resolutionRate}%</h3>
-              </div>
-            </div>
-          </div>
-
-          {/* Navigation tabs selector */}
-          <div className="flex border-b border-slate-200 select-none">
-            {['Overview', 'Escalated', 'Delayed', 'All Department'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-3 px-6 text-xs font-bold transition-all border-b-2 -mb-[2px] ${
-                  activeTab === tab
-                    ? 'border-accent-600 text-accent-700 font-extrabold'
-                    : 'border-transparent text-slate-400 hover:text-slate-655'
-                }`}
+          {/* KPI Statistic Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 select-none">
+            {statCards.map(({ key, label, value, icon: Icon, iconBg, iconColor, iconBorder }) => (
+              <div
+                key={key}
+                className="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
               >
-                {tab}
-              </button>
+                <div className={`p-3 ${iconBg} ${iconColor} rounded-xl border ${iconBorder} flex-shrink-0`}>
+                  <Icon className="h-5 w-5 sm:h-6 sm:w-6 stroke-[1.5]" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">{label}</p>
+                  <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-0.5">{value}</h3>
+                </div>
+              </div>
             ))}
           </div>
 
-          {/* List display based on selected tab */}
+          {/* Search & Filters Bar */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
+            <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
+              {/* Search input */}
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by title, description, or location..."
+                  className="w-full pl-10 pr-9 py-2.5 text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-xl placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-accent-500/30 focus:border-accent-400 transition-colors"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Priority filter */}
+              <div className="flex items-center gap-2 sm:w-auto">
+                <SlidersHorizontal className="hidden sm:block h-4 w-4 text-slate-400 flex-shrink-0" />
+                <select
+                  value={priorityFilter}
+                  onChange={(e) => setPriorityFilter(e.target.value)}
+                  className="flex-1 lg:flex-none text-xs sm:text-sm font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent-500/30 focus:border-accent-400 transition-colors cursor-pointer"
+                >
+                  {PRIORITY_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option === 'All' ? 'All Priorities' : `${option} Priority`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Status filter */}
+              <div className="flex items-center gap-2 sm:w-auto">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="flex-1 lg:flex-none text-xs sm:text-sm font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent-500/30 focus:border-accent-400 transition-colors cursor-pointer"
+                >
+                  {statusOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option === 'All' ? 'All Statuses' : option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 bg-slate-50 hover:bg-rose-50 rounded-xl px-3.5 py-2.5 transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Complaint List */}
           <div>
             {loading ? (
               <div className="bg-white rounded-2xl border border-slate-200 p-12">
-                <Loading message="Compiling analytics dashboard..." />
+                <Loading message="Compiling department complaint records..." />
               </div>
             ) : error ? (
               <Error message={error} onRetry={fetchDepartmentComplaints} />
+            ) : complaints.length === 0 ? (
+              <div className="bg-white border border-slate-200 rounded-2xl p-12 sm:p-16 flex flex-col items-center text-center">
+                <div className="p-4 bg-slate-50 text-slate-300 rounded-2xl border border-slate-100 mb-4">
+                  <Inbox className="h-8 w-8 stroke-[1.5]" />
+                </div>
+                <h4 className="text-sm font-extrabold text-slate-700">No complaints registered yet</h4>
+                <p className="text-xs font-semibold text-slate-400 mt-1.5 max-w-sm">
+                  New complaints filed for your department will show up here as soon as they arrive.
+                </p>
+              </div>
+            ) : filteredComplaints.length === 0 ? (
+              <div className="bg-white border border-slate-200 rounded-2xl p-12 sm:p-16 flex flex-col items-center text-center">
+                <div className="p-4 bg-slate-50 text-slate-300 rounded-2xl border border-slate-100 mb-4">
+                  <FileSearch className="h-8 w-8 stroke-[1.5]" />
+                </div>
+                <h4 className="text-sm font-extrabold text-slate-700">No complaints match your filters</h4>
+                <p className="text-xs font-semibold text-slate-400 mt-1.5 max-w-sm">
+                  Try adjusting your search term or resetting the priority and status filters.
+                </p>
+                <button
+                  onClick={clearFilters}
+                  className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-xl px-4 py-2 transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Clear all filters
+                </button>
+              </div>
             ) : (
-              <div className="space-y-6">
-                {/* Overview tab */}
-                {activeTab === 'Overview' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Escalated block */}
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-                          <h4 className="font-extrabold text-xs text-slate-400 uppercase tracking-wider flex items-center">
-                            <AlertOctagon className="h-4.5 w-4.5 text-rose-500 mr-2" />
-                            High Priority Escalations
-                          </h4>
-                          <span className="bg-rose-50 border border-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                            {escalatedComplaints.length} Alert{escalatedComplaints.length !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                        
-                        {escalatedComplaints.length === 0 ? (
-                          <p className="text-xs text-slate-400 font-semibold p-4 text-center">No active escalations present in the system.</p>
-                        ) : (
-                          <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
-                            {escalatedComplaints.slice(0, 4).map((item) => (
-                              <div key={item.id} className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/50 rounded-xl hover:border-slate-300 transition-colors">
-                                <div className="truncate pr-4">
-                                  <h5 className="text-xs font-bold text-slate-800 truncate">{item.title}</h5>
-                                  <p className="text-[10px] text-slate-400 font-semibold mt-1">Priority Score: {item.priority_score} | Upvotes: {item.upvotes}</p>
-                                </div>
-                                <a 
-                                  href={`/complaints/${item.id}`}
-                                  className="inline-flex items-center text-[10px] font-bold text-accent-600 hover:text-accent-700 hover:underline flex-shrink-0"
-                                >
-                                  Audit <ChevronRight className="h-3 w-3 ml-0.5" />
-                                </a>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      
-                      {escalatedComplaints.length > 4 && (
-                        <button 
-                          onClick={() => setActiveTab('Escalated')}
-                          className="w-full text-center text-xs font-bold text-slate-450 hover:text-slate-700 pt-4 border-t border-slate-100 mt-2.5"
-                        >
-                          View all escalated items &rarr;
-                        </button>
-                      )}
+              <div className="space-y-4">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">
+                  Showing {filteredComplaints.length} of {totalCount} complaint{totalCount !== 1 ? 's' : ''}
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+                  {filteredComplaints.map((complaint) => (
+                    <div
+                      key={complaint.id}
+                      className="transition-transform duration-200 hover:-translate-y-1"
+                    >
+                      <ComplaintCard complaint={complaint} onUpvoteSuccess={handleUpvoteSuccess} />
                     </div>
-
-                    {/* Delayed block */}
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-                          <h4 className="font-extrabold text-xs text-slate-400 uppercase tracking-wider flex items-center">
-                            <Hourglass className="h-4.5 w-4.5 text-amber-500 mr-2" />
-                            Delayed Performance Warnings
-                          </h4>
-                          <span className="bg-amber-50 border border-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                            {delayedComplaints.length} Delayed
-                          </span>
-                        </div>
-                        
-                        {delayedComplaints.length === 0 ? (
-                          <p className="text-xs text-slate-400 font-semibold p-4 text-center">All department filings are resolving within SLA limits.</p>
-                        ) : (
-                          <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
-                            {delayedComplaints.slice(0, 4).map((item) => (
-                              <div key={item.id} className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/50 rounded-xl hover:border-slate-300 transition-colors">
-                                <div className="truncate pr-4">
-                                  <h5 className="text-xs font-bold text-slate-800 truncate">{item.title}</h5>
-                                  <p className="text-[10px] text-slate-400 font-semibold mt-1">Filed: {new Date(item.created_at).toLocaleDateString()}</p>
-                                </div>
-                                <a 
-                                  href={`/complaints/${item.id}`}
-                                  className="inline-flex items-center text-[10px] font-bold text-accent-600 hover:text-accent-700 hover:underline flex-shrink-0"
-                                >
-                                  Audit <ChevronRight className="h-3 w-3 ml-0.5" />
-                                </a>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      
-                      {delayedComplaints.length > 4 && (
-                        <button 
-                          onClick={() => setActiveTab('Delayed')}
-                          className="w-full text-center text-xs font-bold text-slate-450 hover:text-slate-700 pt-4 border-t border-slate-100 mt-2.5"
-                        >
-                          View all delayed reports &rarr;
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Escalated List view */}
-                {activeTab === 'Escalated' && (
-                  escalatedComplaints.length === 0 ? (
-                    <div className="bg-white p-12 border border-slate-200 rounded-2xl text-center text-xs text-slate-400 font-bold">
-                      No active escalated issues.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {escalatedComplaints.map((complaint) => (
-                        <ComplaintCard key={complaint.id} complaint={complaint} onUpvoteSuccess={handleUpvoteSuccess} />
-                      ))}
-                    </div>
-                  )
-                )}
-
-                {/* Delayed List view */}
-                {activeTab === 'Delayed' && (
-                  delayedComplaints.length === 0 ? (
-                    <div className="bg-white p-12 border border-slate-200 rounded-2xl text-center text-xs text-slate-400 font-bold">
-                      No unresolved delayed complaints.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {delayedComplaints.map((complaint) => (
-                        <ComplaintCard key={complaint.id} complaint={complaint} onUpvoteSuccess={handleUpvoteSuccess} />
-                      ))}
-                    </div>
-                  )
-                )}
-
-                {/* All Department List view */}
-                {activeTab === 'All Department' && (
-                  complaints.length === 0 ? (
-                    <div className="bg-white p-12 border border-slate-200 rounded-2xl text-center text-xs text-slate-400 font-bold">
-                      No complaints registered in the department registry.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {complaints.map((complaint) => (
-                        <ComplaintCard key={complaint.id} complaint={complaint} onUpvoteSuccess={handleUpvoteSuccess} />
-                      ))}
-                    </div>
-                  )
-                )}
+                  ))}
+                </div>
               </div>
             )}
           </div>

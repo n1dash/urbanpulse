@@ -49,6 +49,14 @@ const AdminDashboard = () => {
   const resolvedComplaints = complaints.filter(
     (c) => c.status === "Resolved"
   ).length;
+
+  const inProgressComplaints = complaints.filter(
+    (c) => c.status === "In Progress"
+  ).length;
+
+  const highPriorityComplaints = complaints.filter(
+    (c) => c.priority_score >= 70
+  ).length;
   const [activeTab, setActiveTab] = useState('Departments');
 
   // New Department Form State
@@ -161,6 +169,28 @@ const AdminDashboard = () => {
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                 Here's what's happening across your city today.
               </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <p className="text-xs text-slate-500 font-semibold">Total Complaints</p>
+                <h2 className="text-3xl font-bold mt-2">{totalComplaints}</h2>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <p className="text-xs text-slate-500 font-semibold">Resolved</p>
+                <h2 className="text-3xl font-bold mt-2">{resolvedComplaints}</h2>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <p className="text-xs text-slate-500 font-semibold">In Progress</p>
+                <h2 className="text-3xl font-bold mt-2">{inProgressComplaints}</h2>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                <p className="text-xs text-slate-500 font-semibold">High Priority</p>
+                <h2 className="text-3xl font-bold mt-2">{highPriorityComplaints}</h2>
+              </div>
             </div>
             
             <div className="flex items-center space-x-3 self-start sm:self-auto">
