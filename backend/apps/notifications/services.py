@@ -79,6 +79,7 @@ def trigger_complaint_notification(complaint, event_type, extra_context=None):
         # Create database notification
         Notification.objects.create(
             user=user,
+            complaint=complaint,
             message=message,
             notification_type=notif_type
         )

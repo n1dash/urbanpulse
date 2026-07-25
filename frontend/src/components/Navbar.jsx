@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Menu, LogOut, Globe, Bell } from 'lucide-react';
+import { notificationService } from "../services/api";
 
 const Navbar = ({ onToggleSidebar, showMenuButton = true }) => {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
 
   const handleLogout = () => {
     logout();
@@ -23,12 +25,25 @@ const Navbar = ({ onToggleSidebar, showMenuButton = true }) => {
     }
   };
 
-  // Mock Notifications for high fidelity experience
-  const mockNotifications = [
-    { id: 1, text: 'New complaint "Water Leakage" verified in Sector 2.', time: '5 mins ago' },
-    { id: 2, text: 'Road damage assignment updated to "In Progress".', time: '1 hour ago' },
-    { id: 3, text: 'Senior Officer reviewed your electrical report.', time: '4 hours ago' }
-  ];
+  // Notifications for high fidelity experience
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const fetchNotifications = async () => {
+      try {
+        const data = await notificationService.getNotifications();
+        setNotifications(data);
+      } catch (error) {
+        console.error("Failed to load notifications:", error);
+      }
+    };
+
+    fetchNotifications();
+  }, [isAuthenticated]);
+
+  const unreadCount = notifications.filter(
+    (notif) => !notif.is_read
+  ).length;
 
   return (
     <nav className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 text-slate-800 z-40 px-4 md:px-6 flex items-center justify-between shadow-sm select-none">
@@ -87,7 +102,12 @@ const Navbar = ({ onToggleSidebar, showMenuButton = true }) => {
                 className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-50 border border-slate-100 rounded-lg transition-colors relative"
               >
                 <Bell className="h-4 w-4" />
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-accent-500" />
+
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
               </button>
 
               {notificationsOpen && (
@@ -96,15 +116,66 @@ const Navbar = ({ onToggleSidebar, showMenuButton = true }) => {
                   <div className="absolute right-0 mt-2.5 w-72 bg-white rounded-xl shadow-lg border border-slate-200 py-3 z-50 animate-fade-in">
                     <div className="px-4 pb-2 border-b border-slate-100 flex items-center justify-between">
                       <span className="text-xs font-extrabold text-slate-800">Notifications</span>
-                      <span className="text-[10px] text-accent-600 font-bold hover:underline cursor-pointer">Mark all read</span>
+                      <span
+                        onClick={async () => {
+                          try {
+                            await notificationService.markAllAsRead();
+                            setNotifications((prev) =>
+                              prev.map((n) => ({ ...n, is_read: true }))
+                            );
+                          } catch (error) {
+                            console.error(error);
+                          }
+                        }}
+                        className="text-[10px] text-accent-600 font-bold hover:underline cursor-pointer"
+                      >
+                        Mark all read
+                      </span>
                     </div>
                     <div className="divide-y divide-slate-50">
-                      {mockNotifications.map((notif) => (
-                        <div key={notif.id} className="px-4 py-2.5 hover:bg-slate-50 transition-colors">
-                          <p className="text-[11px] font-medium text-slate-650 leading-relaxed">{notif.text}</p>
-                          <span className="text-[9px] font-bold text-slate-400 mt-1 block">{notif.time}</span>
+                      {notifications.length > 0 ? (
+                        notifications.map((notif) => (
+                          <div
+                            key={notif.id}
+                            onClick={async () => {
+                              try {
+                                await notificationService.markAsRead(notif.id);
+
+                                setNotifications((prev) =>
+                                  prev.map((n) =>
+                                    n.id === notif.id ? { ...n, is_read: true } : n
+                                  )
+                                );
+
+                                setNotificationsOpen(false);
+
+                                console.log(notif);
+
+                                if (notif.complaint) {
+                                  navigate(`/complaints/${notif.complaint}`);
+                                }
+                              } catch (error) {
+                                console.error(error);
+                              }
+                            }}
+                            className={`px-4 py-2.5 hover:bg-slate-50 transition-colors cursor-pointer ${
+                              !notif.is_read ? "bg-blue-50" : ""
+                            }`}
+                          >
+                            <p className="text-[11px] font-medium text-slate-650 leading-relaxed">
+                              {notif.message}
+                            </p>
+
+                            <span className="text-[9px] font-bold text-slate-400 mt-1 block">
+                              {new Date(notif.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-6 text-center text-xs text-slate-400">
+                          No notifications yet
                         </div>
-                      ))}
+                      )}
                     </div>
                   </div>
                 </>

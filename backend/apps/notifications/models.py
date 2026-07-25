@@ -15,6 +15,15 @@ class Notification(models.Model):
         on_delete=models.CASCADE,
         related_name='notifications'
     )
+
+    complaint = models.ForeignKey(
+        "core.Complaint",
+        on_delete=models.CASCADE,
+        related_name="notifications",
+        null=True,
+        blank=True,
+    )
+    
     message = models.TextField()
     notification_type = models.CharField(
         max_length=20,

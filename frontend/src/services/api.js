@@ -273,4 +273,21 @@ export const dashboardService = {
   },
 };
 
+export const notificationService = {
+  getNotifications: async () => {
+    const response = await api.get("/notifications/");
+    return unwrap(response.data);
+  },
+
+  markAsRead: async (id) => {
+    const response = await api.patch(`/notifications/${id}/mark-read/`);
+    return response.data;
+  },
+
+  markAllAsRead: async () => {
+    const response = await api.post("/notifications/mark-all-read/");
+    return response.data;
+  },
+};
+
 export default api;
