@@ -87,11 +87,14 @@ const adaptComplaint = (c) => ({
   is_upvoted: !!c.has_voted,
   image: resolveMediaUrl(c.image),
   evidence_image: resolveMediaUrl(c.resolution_image),
+  resolution_notes: c.resolution_notes,
   timeline: (c.timeline || []).map((t) => ({
     status: t.status,
     timestamp: t.timestamp,
     notes: t.description,
   })),
+  assigned_officer: c.assigned_officer,
+  assigned_officer_name: c.assigned_officer_name,
   created_at: c.created_at,
 });
 
@@ -200,6 +203,25 @@ export const complaintService = {
   upvoteComplaint: async (id) => {
     const response = await api.post(`/v1/complaints/${id}/vote/`);
     return response.data;
+  },
+
+  assignComplaint: async (complaintId, officerId) => {
+    const response = await api.post(
+      `/v1/complaints/${complaintId}/assign/`,
+      {
+        officer_id: officerId,
+      }
+    );
+
+    return adaptComplaint(response.data);
+  },
+};
+
+export const officerService = {
+  getOfficers: async () => {
+    const response = await api.get("/v1/officers/");
+    console.log("Officers API:", response.data);
+    return unwrap(response.data);
   },
 };
 

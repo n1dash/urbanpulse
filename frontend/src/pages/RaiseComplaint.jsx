@@ -18,8 +18,8 @@ const RaiseComplaint = () => {
     description: '',
     department: '', // holds a department ID - the backend's Department is a real FK, not free text
     location_name: '',
-    lat: 12.9716, 
-    lng: 77.5946,
+    lat: 18.449299, 
+    lng: 73.825601,
   });
 
   useEffect(() => {

@@ -17,6 +17,9 @@ class UserShortSerializer(serializers.ModelSerializer):
         fields = ("id", "username", "email", "first_name", "last_name")
 
 
+        
+
+
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
@@ -98,6 +101,7 @@ class ComplaintSerializer(serializers.ModelSerializer):
             "duplicate_of",
             "duplicate_of_title",
             "resolution_image",
+            "resolution_notes",
             "resolved_at",
             "created_at",
             "updated_at",

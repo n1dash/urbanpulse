@@ -1,7 +1,7 @@
 import React from 'react';
 import { Check, Circle } from 'lucide-react';
 
-const STAGES = ['Created', 'Verified', 'Assigned', 'In Progress', 'Resolved'];
+const STAGES = ['Reported', 'Verified', 'Assigned', 'In Progress', 'Resolved'];
 
 const Timeline = ({ currentStatus, timelineData = [] }) => {
   // Normalize the status string to match our STAGES array

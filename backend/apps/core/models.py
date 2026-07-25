@@ -153,6 +153,7 @@ class Complaint(models.Model):
     resolution_image = models.ImageField(
         upload_to="resolutions/", blank=True, null=True
     )
+    resolution_notes = models.TextField(blank=True, null=True)
     resolved_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

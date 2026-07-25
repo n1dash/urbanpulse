@@ -4,10 +4,12 @@ from apps.core.views import (
     DepartmentViewSet,
     ComplaintViewSet,
     OfficerComplaintsViewSet,
+    OfficerViewSet,
 )
 
 router = DefaultRouter()
 router.register(r"departments", DepartmentViewSet, basename="department")
+router.register(r"officers", OfficerViewSet, basename="officer")
 router.register(r"complaints", ComplaintViewSet, basename="complaint")
 router.register(
     r"officer/complaints", OfficerComplaintsViewSet, basename="officer-complaint"

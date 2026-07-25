@@ -16,6 +16,7 @@ from apps.core.models import (
     ComplaintTimeline,
     ComplaintVote,
     StatusChoices,
+    HierarchyLevel,
 )
 from apps.core.serializers import (
     DepartmentSerializer,
@@ -60,7 +61,27 @@ class OfficerViewSet(viewsets.ReadOnlyModelViewSet):
         "department__name"
     )
     serializer_class = OfficerSerializer
-    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        # Admin sees all officers
+        if user.is_superuser or user.role == UserRole.ADMIN:
+            return Officer.objects.select_related("user", "department").order_by(
+                "department__name"
+            )
+
+        # Senior Officer sees only field officers in their own department
+        if hasattr(user, "officer_profile"):
+            officer = user.officer_profile
+
+            return Officer.objects.filter(
+                department=officer.department,
+                hierarchy_level=HierarchyLevel.FIELD_OFFICER,
+            ).select_related("user")
+
+        return Officer.objects.none()
 
 
 class OfficerCreateView(generics.CreateAPIView):
@@ -114,7 +135,13 @@ class ComplaintViewSet(viewsets.ModelViewSet):
         # Officer / Senior Officer
         if hasattr(user, "officer_profile"):
             officer = user.officer_profile
-            return queryset.filter(department=officer.department)
+
+            # Senior Officer sees all complaints in their department
+            if officer.hierarchy_level == HierarchyLevel.SENIOR_OFFICER:
+                return queryset.filter(department=officer.department)
+
+            # Field Officer sees only complaints assigned to them
+            return queryset.filter(assigned_officer=officer)
 
         return queryset.none()
 
@@ -206,27 +233,27 @@ class ComplaintViewSet(viewsets.ModelViewSet):
                     trigger_complaint_notification(updated_complaint, "RESOLVED")
 
                 # Auto-assign if status changes to Verified and no officer is assigned
-                if (
-                    new_status == StatusChoices.VERIFIED
-                    and not updated_complaint.assigned_officer
-                ):
-                    officer = assign_or_escalate_complaint(updated_complaint)
-                    if officer:
-                        updated_complaint.assigned_officer = officer
-                        # Auto transition verified -> assigned
-                        updated_complaint.status = StatusChoices.ASSIGNED
-                        updated_complaint.save()
-
-                        ComplaintTimeline.objects.create(
-                            complaint=updated_complaint,
-                            status=StatusChoices.ASSIGNED,
-                            description=f"Automatically assigned and escalated to officer: {officer.user.username} ({officer.designation}).",
-                            updated_by=self.request.user,
-                        )
-                        logger.info(
-                            f"Complaint '{updated_complaint.title}' automatically assigned to officer {officer.user.username}."
-                        )
-                        trigger_complaint_notification(updated_complaint, "ASSIGNED")
+               # if (
+               #     new_status == StatusChoices.VERIFIED
+               #     and not updated_complaint.assigned_officer
+              #  ):
+              #      officer = assign_or_escalate_complaint(updated_complaint)
+              #      if officer:
+             #           updated_complaint.assigned_officer = officer
+             #           # Auto transition verified -> assigned
+              #          updated_complaint.status = StatusChoices.ASSIGNED
+             #           updated_complaint.save()
+#
+              #          ComplaintTimeline.objects.create(
+              #              complaint=updated_complaint,
+              #              status=StatusChoices.ASSIGNED,
+              #              description=f"Automatically assigned and escalated to officer: {officer.user.username} ({officer.designation}).",
+               #             updated_by=self.request.user,
+              #          )
+             #           logger.info(
+              #              f"Complaint '{updated_complaint.title}' automatically assigned to officer {officer.user.username}."
+              #          )
+              #          trigger_complaint_notification(updated_complaint, "ASSIGNED")
 
     @action(
         detail=True,
@@ -351,7 +378,10 @@ class ComplaintViewSet(viewsets.ModelViewSet):
             if new_status == StatusChoices.RESOLVED:
                 if resolution_image:
                     complaint.resolution_image = resolution_image
+
+                complaint.resolution_notes = description
                 complaint.resolved_at = timezone.now()
+
                 logger.info(
                     f"Complaint '{complaint.title}' (ID: {complaint.id}) marked as Resolved by officer {request.user.username}."
                 )
@@ -371,26 +401,68 @@ class ComplaintViewSet(viewsets.ModelViewSet):
             if new_status == StatusChoices.RESOLVED:
                 trigger_complaint_notification(complaint, "RESOLVED")
 
-            # Auto-escalation trigger when transitioning to Verified (if no officer assigned yet)
-            if new_status == StatusChoices.VERIFIED and not complaint.assigned_officer:
-                officer = assign_or_escalate_complaint(complaint)
-                if officer:
-                    complaint.assigned_officer = officer
-                    complaint.status = StatusChoices.ASSIGNED
-                    complaint.save()
-
-                    ComplaintTimeline.objects.create(
-                        complaint=complaint,
-                        status=StatusChoices.ASSIGNED,
-                        description=f"Automatically assigned and escalated to officer: {officer.user.username} ({officer.designation}).",
-                        updated_by=request.user,
-                    )
-                    logger.info(
-                        f"Complaint '{complaint.title}' automatically assigned to officer {officer.user.username}."
-                    )
-                    trigger_complaint_notification(complaint, "ASSIGNED")
+            # Manual assignment workflow:
+            # Complaint remains VERIFIED until a Senior Officer assigns it.
+            if new_status == StatusChoices.VERIFIED:
+                logger.info(
+                    f"Complaint '{complaint.title}' verified and waiting for manual assignment."
+                )
 
         return Response(self.get_serializer(complaint).data, status=status.HTTP_200_OK)
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[permissions.IsAuthenticated, IsOfficer],
+    )
+    def assign(self, request, pk=None):
+        """
+        Manually assign a VERIFIED complaint to an officer.
+        Only Senior Officers can assign complaints within their department.
+        """
+        complaint = self.get_object()
+        officer = request.user.officer_profile
+
+        # Only Senior Officers can assign
+        if officer.hierarchy_level != "SENIOR_OFFICER":
+            return Response(
+                {"error": "Only Senior Officers can assign complaints."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        officer_id = request.data.get("officer_id")
+
+        if not officer_id:
+            return Response(
+                {"error": "officer_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            assigned_officer = Officer.objects.get(
+                id=officer_id,
+                department=complaint.department,
+            )
+        except Officer.DoesNotExist:
+            return Response(
+                {"error": "Officer not found in this department."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        complaint.assigned_officer = assigned_officer
+        complaint.status = StatusChoices.ASSIGNED
+        complaint.save()
+
+        ComplaintTimeline.objects.create(
+            complaint=complaint,
+            status=StatusChoices.ASSIGNED,
+            description=f"Assigned to {assigned_officer.user.username}.",
+            updated_by=request.user,
+        )
+
+        trigger_complaint_notification(complaint, "ASSIGNED")
+
+        return Response(self.get_serializer(complaint).data)
 
 
 class OfficerComplaintsViewSet(viewsets.ReadOnlyModelViewSet):
@@ -407,7 +479,9 @@ class OfficerComplaintsViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         officer = self.request.user.officer_profile
-        # Return complaints that are in their department
-        return Complaint.objects.filter(department=officer.department).order_by(
+
+        return Complaint.objects.filter(
+            assigned_officer=officer
+        ).order_by(
             "-priority_score", "-created_at"
         )

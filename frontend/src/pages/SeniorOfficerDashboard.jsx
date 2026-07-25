@@ -3,7 +3,7 @@ import { complaintService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
-import ComplaintCard from '../components/ComplaintCard';
+import SeniorComplaintCard from '../components/SeniorComplaintCard';
 import Loading from '../components/Loading';
 import Error from '../components/Error';
 import {
@@ -62,8 +62,8 @@ const SeniorOfficerDashboard = () => {
             priority_score: 8,
             upvotes: 42,
             location_name: "5th Avenue Metro Stn",
-            lat: 12.9716,
-            lng: 77.5946,
+            lat: 18.449299,
+            lng: 73.825601,
             created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
           },
           {
@@ -371,7 +371,7 @@ const SeniorOfficerDashboard = () => {
                       key={complaint.id}
                       className="transition-transform duration-200 hover:-translate-y-1"
                     >
-                      <ComplaintCard complaint={complaint} onUpvoteSuccess={handleUpvoteSuccess} />
+                      <SeniorComplaintCard complaint={complaint} onUpvoteSuccess={handleUpvoteSuccess} />
                     </div>
                   ))}
                 </div>

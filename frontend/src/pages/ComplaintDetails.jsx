@@ -247,6 +247,18 @@ const ComplaintDetails = () => {
                 </div>
               </div>
 
+              <div className="mt-4">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Resolution Notes
+                </p>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <p className="text-sm text-slate-700">
+                    {complaint.resolution_notes || "No resolution notes available."}
+                  </p>
+                </div>
+              </div>
+
               {/* Timeline Comments Logs */}
               {complaint.timeline && complaint.timeline.length > 0 && (
                 <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">

@@ -39,8 +39,8 @@ const CitizenDashboard = () => {
             priority_score: 8,
             upvotes: 42,
             location_name: "5th Avenue Metro Stn",
-            lat: 12.9716,
-            lng: 77.5946,
+            lat: 18.449299,
+            lng: 73.825601,
             created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
           },
           {
@@ -198,7 +198,7 @@ const CitizenDashboard = () => {
                 </div>
                 {!loading && complaints.length > 0 ? (
                   <Map 
-                    center={[12.9716, 77.5946]}
+                    center={[18.449299, 73.825601]}
                     zoom={13}
                     markers={complaints}
                     height="280px"
