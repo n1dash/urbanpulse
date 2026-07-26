@@ -133,13 +133,53 @@ const Sidebar = ({ isOpen, onCloseSideBar }) => {
               </nav>
             </div>
 
-            {/* Quick Informational Panel for GovTech */}
+            {/* Citizen Support Center */}
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl shadow-sm">
-              <div className="flex items-start space-x-2.5 text-slate-500">
-                <HelpCircle className="h-4.5 w-4.5 text-accent-500 flex-shrink-0 mt-0.5" />
-                <div className="flex flex-col leading-snug">
-                  <span className="text-[11px] font-bold text-slate-800">Support Center</span>
-                  <span className="text-[10px] text-slate-400 mt-1 leading-normal">Need assistance? File a report or contact smart city helpline at 112.</span>
+              <div className="flex items-start space-x-2.5">
+                <HelpCircle className="h-5 w-5 text-accent-500 flex-shrink-0 mt-0.5" />
+
+                <div className="flex-1">
+                  <h3 className="text-[11px] font-bold text-slate-800">
+                    Citizen Support Panel 
+                  </h3>
+
+                  <div className="mt-3 space-y-2 text-[10px] text-slate-600">
+                    <div className="flex justify-between">
+                      <span>◆ Road Department</span>
+                      <span className="font-semibold">+91********08</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span>◆ Electricity Department</span>
+                      <span className="font-semibold">+91********17</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span>◆ Water Department</span>
+                      <span className="font-semibold">+91********25</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span>◆ Sanitation Department</span>
+                      <span className="font-semibold">+91********42</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span>◆ Parks Department</span>
+                      <span className="font-semibold">+91********63</span>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-200 my-3"></div>
+
+                  <p className="text-[10px] font-bold text-accent-700">
+                    💡 Quick Tip
+                  </p>
+
+                  <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                    Before filing a new complaint, check <strong>Community Complaints</strong>.
+                    If the issue already exists, upvote it instead of creating a duplicate report.
+                  </p>
                 </div>
               </div>
             </div>

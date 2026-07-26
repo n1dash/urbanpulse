@@ -130,7 +130,7 @@ class ComplaintViewSet(viewsets.ModelViewSet):
 
         # Citizen sees only their own complaints
         if user.role == UserRole.CITIZEN:
-            return queryset.filter(user=user)
+            return queryset
 
         # Officer / Senior Officer
         if hasattr(user, "officer_profile"):

@@ -95,6 +95,7 @@ const adaptComplaint = (c) => ({
   })),
   assigned_officer: c.assigned_officer,
   assigned_officer_name: c.assigned_officer_name,
+  user: c.user,
   created_at: c.created_at,
 });
 

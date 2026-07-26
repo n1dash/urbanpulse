@@ -17,6 +17,8 @@ const CitizenDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [viewMode, setViewMode] = useState("my");
+
   const fetchComplaints = async () => {
     setLoading(true);
     setError('');
@@ -217,6 +219,30 @@ const CitizenDashboard = () => {
                   Your Filed Complaints Registry
                 </h3>
 
+                <div className="flex gap-2 mt-4 mb-6">
+                  <button
+                    onClick={() => setViewMode("my")}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                      viewMode === "my"
+                        ? "bg-accent-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    My Complaints
+                  </button>
+
+                  <button
+                    onClick={() => setViewMode("community")}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                      viewMode === "community"
+                        ? "bg-accent-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    Community Complaints
+                  </button>
+                </div>
+
                 {loading ? (
                   <div className="bg-white rounded-2xl border border-slate-200 p-12">
                     <Loading message="Syncing complaints registry..." />
@@ -241,7 +267,16 @@ const CitizenDashboard = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {complaints.map((complaint) => (
+                    {(viewMode === "my"
+                      ? complaints.filter(
+                          (complaint) =>
+                            complaint.user?.id === user?.id || complaint.user === user?.id
+                        )
+                      : complaints.filter(
+                          (complaint) =>
+                            complaint.user?.id !== user?.id && complaint.user !== user?.id
+                        )
+                    ).map((complaint) => (
                       <ComplaintCard
                         key={complaint.id}
                         complaint={complaint}

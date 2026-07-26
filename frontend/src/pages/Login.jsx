@@ -107,7 +107,7 @@ const Login = () => {
             {/* Username */}
             <div>
               <label htmlFor="username" className="block text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-2">
-                Username or Email
+                Email
               </label>
               <div className="relative rounded-xl shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
