@@ -86,15 +86,13 @@ UrbanPulse supports multiple municipal departments:
 Complaints flow through a structured chain of responsibility:
 
 ```
-Municipal Commissioner
+Municipal Commissioner (Admin)
         ↓
-   Department Head
+   Department Head (Admin)
         ↓
    Senior Officer
         ↓
-   Junior Officer
-        ↓
-   Field Worker
+   Junior Officer 
 ```
 
 ### 4. Complaint Lifecycle
@@ -108,8 +106,6 @@ Verified
 Assigned
    ↓
 In Progress
-   ↓
-Inspection
    ↓
 Resolved
    ↓
@@ -130,7 +126,7 @@ Prevents redundant complaints by checking:
 - Complaint description
 
 ### 7. Map Integration
-Powered by **Leaflet** and **OpenStreetMap**:
+Powered by **Leaflet**:
 - Select issue location visually
 - View all complaint locations on an interactive map
 
@@ -140,7 +136,7 @@ Ensures accountability with:
 - After-work images
 - Progress updates from officers
 
-### 9. Email Notification System
+### 9. Notification System
 Automated notifications for:
 - Complaint creation
 - Assignment
@@ -276,7 +272,7 @@ npm run dev
 ## Future Improvements
 
 -  Mobile application
--  SMS notifications
+-  SMS/Email notifications
 -  Government API integration
 -  Real-time complaint tracking
 -  Smart city analytics
@@ -284,7 +280,7 @@ npm run dev
 
 ---
 
-## Team Members
+## UrbanPulse Team Members
 
 - Aparna Patre
 - Nishad Remane
