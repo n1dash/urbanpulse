@@ -43,7 +43,7 @@ UrbanPulse aims to:
 - Track complaint status
 - View complaint history
 - Upvote existing complaints
-- Receive email notifications
+- Receive notifications
 
 ### Department Officer
 - View assigned complaints
@@ -288,7 +288,7 @@ npm run dev
 
 - Aparna Patre
 - Nishad Remane
-- Saurav Nigam
+- Saurav Nikam
 - Siddhi Rayrikar
 - Sarvesh Aapshette
 
