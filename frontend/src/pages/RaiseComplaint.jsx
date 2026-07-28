@@ -18,7 +18,7 @@ const RaiseComplaint = () => {
     description: '',
     department: '', // holds a department ID - the backend's Department is a real FK, not free text
     location_name: '',
-    lat: 18.449299, 
+    lat: 18.449299,
     lng: 73.825601,
   });
 
@@ -80,7 +80,7 @@ const RaiseComplaint = () => {
     data.append('location_name', formData.location_name);
     data.append('lat', formData.lat);
     data.append('lng', formData.lng);
-    
+
     if (imageFile) {
       data.append('image', imageFile);
     }
@@ -200,12 +200,12 @@ const RaiseComplaint = () => {
                       <div className="flex text-xs text-slate-500 font-bold select-none justify-center">
                         <label className="relative cursor-pointer bg-transparent text-accent-600 hover:text-accent-700 focus-within:outline-none">
                           <span>Upload photo evidence</span>
-                          <input 
-                            type="file" 
+                          <input
+                            type="file"
                             name="image"
                             accept="image/*"
                             onChange={handleImageChange}
-                            className="sr-only" 
+                            className="sr-only"
                           />
                         </label>
                       </div>
@@ -226,8 +226,8 @@ const RaiseComplaint = () => {
                   <p className="text-[11px] text-slate-400 font-semibold leading-normal">
                     Click anywhere on the map to place a precise location pin.
                   </p>
-                  
-                  <Map 
+
+                  <Map
                     selectable={true}
                     selectedLocation={{ lat: formData.lat, lng: formData.lng }}
                     onLocationSelect={handleLocationSelect}
