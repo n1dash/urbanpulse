@@ -161,26 +161,26 @@ const OfficerDashboard = () => {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-[#F7FFFB] flex">
       <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
       <Sidebar isOpen={sidebarOpen} onCloseSideBar={() => setSidebarOpen(false)} />
 
       <main className="flex-1 md:pl-64 pt-16 min-h-screen">
         <div className="p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6 md:space-y-8 animate-fade-in">
           {/* Welcoming Header Panel */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-2xl bg-gradient-to-r from-[#F7FFFB] via-[#ECFDF6] to-[#D1FAE5]/50 border border-[#10B981]/15 px-5 py-6 shadow-[0_2px_16px_-4px_rgba(16,185,129,0.18)]">
             <div className="space-y-1">
-              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-[#064E3B] tracking-tight">
                 {getGreeting()}, {user?.username || 'Officer'} 👋
               </h2>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              <p className="text-xs font-bold text-[#5F8577] uppercase tracking-wider">
                 Manage your assigned complaints and keep citizens informed with timely progress updates.
               </p>
             </div>
 
             <div className="flex items-center space-x-3 self-start sm:self-auto">
-              <span className="inline-flex items-center text-[10px] font-bold text-slate-500 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
-                <Calendar className="h-3.5 w-3.5 mr-1.5 text-slate-450 stroke-[2.5]" />
+              <span className="inline-flex items-center text-[10px] font-bold text-[#5F8577] bg-white border border-[#10B981]/20 px-3 py-1.5 rounded-xl shadow-sm">
+                <Calendar className="h-3.5 w-3.5 mr-1.5 text-[#10B981] stroke-[2.5]" />
                 {currentFormattedDate}
               </span>
             </div>
@@ -193,72 +193,72 @@ const OfficerDashboard = () => {
               {/* Quick Metrics Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5 select-none">
                 {/* Assigned */}
-                <div className="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-                  <div className="p-3 bg-slate-50 text-slate-500 rounded-xl border border-slate-100 flex-shrink-0">
+                <div className="bg-white border border-[#10B981]/15 p-4 sm:p-5 rounded-2xl flex items-center space-x-4 shadow-[0_2px_14px_-4px_rgba(16,185,129,0.15)] hover:shadow-[0_4px_20px_-4px_rgba(16,185,129,0.25)] hover:-translate-y-0.5 transition-all duration-200">
+                  <div className="p-3 bg-[#ECFDF6] text-[#10B981] rounded-xl border border-[#D1FAE5] flex-shrink-0">
                     <Briefcase className="h-5 w-5 sm:h-6 sm:w-6 stroke-[1.5]" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">Assigned</p>
-                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-0.5">{totalCount}</h3>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#5F8577] truncate">Assigned</p>
+                    <h3 className="text-lg sm:text-xl font-extrabold text-[#064E3B] mt-0.5">{totalCount}</h3>
                   </div>
                 </div>
 
                 {/* In Progress */}
-                <div className="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                <div className="bg-white border border-[#10B981]/15 p-4 sm:p-5 rounded-2xl flex items-center space-x-4 shadow-[0_2px_14px_-4px_rgba(16,185,129,0.15)] hover:shadow-[0_4px_20px_-4px_rgba(16,185,129,0.25)] hover:-translate-y-0.5 transition-all duration-200">
                   <div className="p-3 bg-sky-50 text-sky-600 rounded-xl border border-sky-100 flex-shrink-0">
                     <Clock className="h-5 w-5 sm:h-6 sm:w-6 stroke-[1.5]" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">In Progress</p>
-                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-0.5">{inProgressCount}</h3>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#5F8577] truncate">In Progress</p>
+                    <h3 className="text-lg sm:text-xl font-extrabold text-[#064E3B] mt-0.5">{inProgressCount}</h3>
                   </div>
                 </div>
 
                 {/* Completed */}
-                <div className="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                <div className="bg-white border border-[#10B981]/15 p-4 sm:p-5 rounded-2xl flex items-center space-x-4 shadow-[0_2px_14px_-4px_rgba(16,185,129,0.15)] hover:shadow-[0_4px_20px_-4px_rgba(16,185,129,0.25)] hover:-translate-y-0.5 transition-all duration-200">
                   <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 flex-shrink-0">
                     <BadgeCheck className="h-5 w-5 sm:h-6 sm:w-6 stroke-[1.5]" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">Completed</p>
-                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-0.5">{completedCount}</h3>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#5F8577] truncate">Completed</p>
+                    <h3 className="text-lg sm:text-xl font-extrabold text-[#064E3B] mt-0.5">{completedCount}</h3>
                   </div>
                 </div>
 
                 {/* High Priority */}
-                <div className="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                <div className="bg-white border border-[#10B981]/15 p-4 sm:p-5 rounded-2xl flex items-center space-x-4 shadow-[0_2px_14px_-4px_rgba(16,185,129,0.15)] hover:shadow-[0_4px_20px_-4px_rgba(16,185,129,0.25)] hover:-translate-y-0.5 transition-all duration-200">
                   <div className="p-3 bg-rose-50 text-rose-600 rounded-xl border border-rose-100 flex-shrink-0">
                     <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 stroke-[1.5]" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">High Priority</p>
-                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-0.5">{highPriorityCount}</h3>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#5F8577] truncate">High Priority</p>
+                    <h3 className="text-lg sm:text-xl font-extrabold text-[#064E3B] mt-0.5">{highPriorityCount}</h3>
                   </div>
                 </div>
               </div>
 
               {/* Search & Filters Bar */}
-              <div className="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl shadow-sm space-y-3.5">
-                <div className="flex items-center space-x-2 text-slate-700">
-                  <Filter className="h-4 w-4 text-accent-500 stroke-[2.5]" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Work Queue Filters</span>
+              <div className="bg-white border border-[#10B981]/15 p-4 sm:p-5 rounded-2xl shadow-[0_2px_14px_-4px_rgba(16,185,129,0.15)] space-y-3.5">
+                <div className="flex items-center space-x-2 text-[#064E3B]">
+                  <Filter className="h-4 w-4 text-[#10B981] stroke-[2.5]" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#5F8577]">Work Queue Filters</span>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2.5">
                   {/* Search input */}
                   <div className="relative flex-1">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8FB5A5]" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search by title, description, or location..."
-                      className="w-full pl-10 pr-9 py-2 text-xs sm:text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-xl placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-colors"
+                      className="w-full pl-10 pr-9 py-2 text-xs sm:text-sm font-medium text-[#064E3B] bg-[#F7FFFB] border border-[#10B981]/20 rounded-xl placeholder:text-[#8FB5A5] placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-[#10B981]/25 focus:border-[#10B981] transition-colors"
                     />
                     {searchQuery && (
                       <button
                         onClick={() => setSearchQuery('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8FB5A5] hover:text-[#10B981]"
                         aria-label="Clear search"
                       >
                         <X className="h-4 w-4" />
@@ -271,7 +271,7 @@ const OfficerDashboard = () => {
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-650 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 cursor-pointer outline-none"
+                      className="bg-[#F7FFFB] border border-[#10B981]/20 rounded-xl px-3 py-2 text-xs font-bold text-[#0B3B2C] focus:outline-none focus:ring-2 focus:ring-[#10B981]/20 focus:border-[#10B981] cursor-pointer outline-none"
                     >
                       <option value="All">All Statuses</option>
                       <option value="Created">Created</option>
@@ -285,7 +285,7 @@ const OfficerDashboard = () => {
                     <select
                       value={priorityFilter}
                       onChange={(e) => setPriorityFilter(e.target.value)}
-                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-650 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 cursor-pointer outline-none"
+                      className="bg-[#F7FFFB] border border-[#10B981]/20 rounded-xl px-3 py-2 text-xs font-bold text-[#0B3B2C] focus:outline-none focus:ring-2 focus:ring-[#10B981]/20 focus:border-[#10B981] cursor-pointer outline-none"
                     >
                       <option value="All">All Priorities</option>
                       <option value="High">High (Score &ge; 7)</option>
@@ -296,7 +296,7 @@ const OfficerDashboard = () => {
                     {hasActiveFilters && (
                       <button
                         onClick={clearFilters}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 bg-slate-50 hover:bg-rose-50 rounded-xl px-3 py-2 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#5F8577] hover:text-rose-600 border border-[#10B981]/20 hover:border-rose-200 bg-[#F7FFFB] hover:bg-rose-50 rounded-xl px-3 py-2 transition-colors"
                       >
                         <X className="h-3.5 w-3.5" />
                         Clear
@@ -308,39 +308,39 @@ const OfficerDashboard = () => {
 
               {/* Assigned List */}
               <div className="space-y-4">
-                <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center">
-                  <ClipboardCheck className="h-4.5 w-4.5 text-accent-500 mr-2" />
+                <h3 className="text-xs font-extrabold text-[#064E3B] uppercase tracking-wider flex items-center">
+                  <ClipboardCheck className="h-4.5 w-4.5 text-[#10B981] mr-2" />
                   My Assigned Complaints
                 </h3>
 
                 {loading ? (
-                  <div className="bg-white rounded-2xl border border-slate-200 p-12">
+                  <div className="bg-white rounded-2xl border border-[#10B981]/15 p-12">
                     <Loading message="Loading your assigned complaints..." />
                   </div>
                 ) : error ? (
                   <Error message={error} onRetry={fetchAssignedComplaints} />
                 ) : complaints.length === 0 ? (
-                  <div className="bg-white rounded-2xl border border-slate-200 p-12 sm:p-16 text-center flex flex-col items-center justify-center">
-                    <div className="p-4 bg-slate-50 text-slate-300 rounded-2xl border border-slate-100 mb-4">
+                  <div className="bg-white rounded-2xl border border-[#10B981]/15 p-12 sm:p-16 text-center flex flex-col items-center justify-center shadow-[0_2px_14px_-4px_rgba(16,185,129,0.15)]">
+                    <div className="p-4 bg-[#ECFDF6] text-[#8FB5A5] rounded-2xl border border-[#D1FAE5] mb-4">
                       <Inbox className="h-8 w-8 stroke-[1.5]" />
                     </div>
-                    <h4 className="text-sm font-extrabold text-slate-700 mb-1.5">No assigned complaints yet</h4>
-                    <p className="text-xs font-semibold text-slate-400 max-w-sm leading-relaxed">
+                    <h4 className="text-sm font-extrabold text-[#0B3B2C] mb-1.5">No assigned complaints yet</h4>
+                    <p className="text-xs font-semibold text-[#5F8577] max-w-sm leading-relaxed">
                       New assignments from your Senior Officer will appear here.
                     </p>
                   </div>
                 ) : filteredComplaints.length === 0 ? (
-                  <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center flex flex-col items-center justify-center">
-                    <div className="p-4 bg-slate-50 text-slate-400 rounded-full mb-4">
+                  <div className="bg-white rounded-2xl border border-[#10B981]/15 p-12 text-center flex flex-col items-center justify-center shadow-[0_2px_14px_-4px_rgba(16,185,129,0.15)]">
+                    <div className="p-4 bg-[#ECFDF6] text-[#8FB5A5] rounded-full mb-4">
                       <AlertTriangle className="h-8 w-8 stroke-[1.2]" />
                     </div>
-                    <h4 className="font-bold text-slate-900 mb-1">No matching complaints</h4>
-                    <p className="text-xs text-slate-500 max-w-sm leading-relaxed mb-4">
+                    <h4 className="font-bold text-[#064E3B] mb-1">No matching complaints</h4>
+                    <p className="text-xs text-[#5F8577] max-w-sm leading-relaxed mb-4">
                       No complaints in your queue match the selected search or filters.
                     </p>
                     <button
                       onClick={clearFilters}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-xl px-4 py-2 transition-colors"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#047857] bg-[#ECFDF6] hover:bg-[#D1FAE5] border border-[#D1FAE5] rounded-xl px-4 py-2 transition-colors"
                     >
                       <X className="h-3.5 w-3.5" />
                       Clear all filters
@@ -364,12 +364,12 @@ const OfficerDashboard = () => {
             {/* Right Column: Responsibilities & Priority Guidelines */}
             <div className="space-y-6">
               {/* Today's Responsibilities */}
-              <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-4 select-none">
-                <div className="flex items-center space-x-2 text-slate-700">
-                  <ShieldCheck className="h-5 w-5 text-accent-500 stroke-[2.5]" />
-                  <h4 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Today's Responsibilities</h4>
+              <div className="bg-white border border-[#10B981]/15 p-5 rounded-2xl shadow-[0_2px_14px_-4px_rgba(16,185,129,0.15)] space-y-4 select-none">
+                <div className="flex items-center space-x-2 text-[#064E3B]">
+                  <ShieldCheck className="h-5 w-5 text-[#10B981] stroke-[2.5]" />
+                  <h4 className="font-extrabold text-xs text-[#064E3B] uppercase tracking-wider">Today's Responsibilities</h4>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-normal">
+                <p className="text-[11px] text-[#5F8577] leading-normal">
                   A quick checklist to guide how you work through your assigned complaints today.
                 </p>
 
@@ -383,42 +383,42 @@ const OfficerDashboard = () => {
                   ].map((task) => (
                     <li key={task} className="flex items-start space-x-2.5">
                       <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0 stroke-[2]" />
-                      <span className="text-xs font-semibold text-slate-650 leading-relaxed">{task}</span>
+                      <span className="text-xs font-semibold text-[#0B3B2C] leading-relaxed">{task}</span>
                     </li>
                   ))}
                 </ul>
 
-                <div className="border-t border-slate-100 pt-4 flex items-center justify-between text-xs font-bold text-slate-650">
+                <div className="border-t border-[#10B981]/10 pt-4 flex items-center justify-between text-xs font-bold text-[#0B3B2C]">
                   <span>Assigned Dept:</span>
-                  <span className="bg-accent-50 border border-accent-100 text-accent-700 px-2 py-0.5 rounded-md text-[10px]">
+                  <span className="bg-[#ECFDF6] border border-[#D1FAE5] text-[#047857] px-2 py-0.5 rounded-md text-[10px]">
                     Municipal Operations
                   </span>
                 </div>
               </div>
 
               {/* Priority Guidelines */}
-              <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-4">
-                <div className="flex items-center space-x-2 text-slate-700">
-                  <AlertTriangle className="h-4.5 w-4.5 text-accent-500" />
-                  <h4 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Priority Guidelines</h4>
+              <div className="bg-white border border-[#10B981]/15 p-5 rounded-2xl shadow-[0_2px_14px_-4px_rgba(16,185,129,0.15)] space-y-4">
+                <div className="flex items-center space-x-2 text-[#064E3B]">
+                  <AlertTriangle className="h-4.5 w-4.5 text-[#10B981]" />
+                  <h4 className="font-extrabold text-xs text-[#064E3B] uppercase tracking-wider">Priority Guidelines</h4>
                 </div>
-                <div className="space-y-3.5 text-xs text-slate-500 leading-normal font-medium">
+                <div className="space-y-3.5 text-xs text-[#5F8577] leading-normal font-medium">
                   <div className="flex items-start space-x-2.5">
                     <span className="h-2 w-2 rounded-full bg-rose-500 mt-1 flex-shrink-0" />
                     <p>
-                      <span className="font-bold text-slate-700">High Priority</span> — Resolve within 24 hours.
+                      <span className="font-bold text-[#064E3B]">High Priority</span> — Resolve within 24 hours.
                     </p>
                   </div>
                   <div className="flex items-start space-x-2.5">
                     <span className="h-2 w-2 rounded-full bg-amber-500 mt-1 flex-shrink-0" />
                     <p>
-                      <span className="font-bold text-slate-700">Medium Priority</span> — Resolve within 48 hours.
+                      <span className="font-bold text-[#064E3B]">Medium Priority</span> — Resolve within 48 hours.
                     </p>
                   </div>
                   <div className="flex items-start space-x-2.5">
                     <span className="h-2 w-2 rounded-full bg-emerald-500 mt-1 flex-shrink-0" />
                     <p>
-                      <span className="font-bold text-slate-700">Low Priority</span> — Resolve within 72 hours.
+                      <span className="font-bold text-[#064E3B]">Low Priority</span> — Resolve within 72 hours.
                     </p>
                   </div>
                 </div>

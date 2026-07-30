@@ -120,32 +120,32 @@ const CitizenDashboard = () => {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-[#FFFDF6] flex">
       <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
       <Sidebar isOpen={sidebarOpen} onCloseSideBar={() => setSidebarOpen(false)} />
 
       <main className="flex-1 md:pl-64 pt-16 min-h-screen flex flex-col">
         <div className="p-6 md:p-8 flex-1 max-w-7xl w-full mx-auto space-y-8 animate-fade-in">
           {/* Welcome Header block */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-2xl bg-gradient-to-r from-[#FFFDF6] via-[#FFF8E3] to-[#F9E8A4]/50 border border-[#F6C344]/20 px-5 py-6 shadow-[0_2px_16px_-4px_rgba(246,195,68,0.20)]">
             <div className="space-y-1">
-              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+              <h2 className="text-2xl font-extrabold text-[#3D2E10] tracking-tight">
                 {getGreeting()}, {user?.username || 'Citizen'} 👋
               </h2>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              <p className="text-xs font-bold text-[#9C8449] uppercase tracking-wider">
                 Here's what's happening across your city today.
               </p>
             </div>
             
             <div className="flex items-center space-x-3 self-start sm:self-auto">
-              <span className="inline-flex items-center text-[10px] font-bold text-slate-450 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
-                <Calendar className="h-3.5 w-3.5 mr-1.5 text-slate-450 stroke-[2.5]" />
+              <span className="inline-flex items-center text-[10px] font-bold text-[#9C8449] bg-white border border-[#F6C344]/30 px-3 py-1.5 rounded-xl shadow-sm">
+                <Calendar className="h-3.5 w-3.5 mr-1.5 text-[#F6C344] stroke-[2.5]" />
                 {currentFormattedDate}
               </span>
 
               <Link
                 to="/citizen/raise"
-                className="inline-flex items-center px-4 py-2 bg-accent-600 hover:bg-accent-700 text-white font-bold text-xs rounded-xl shadow-md shadow-accent-600/10 active:scale-95 transition-all"
+                className="inline-flex items-center px-4 py-2 bg-[#F6C344] hover:bg-[#E0AD2E] text-[#4A3705] font-bold text-xs rounded-xl shadow-md shadow-[#F6C344]/30 active:scale-95 transition-all"
               >
                 <PlusCircle className="h-4 w-4 mr-2 stroke-[2.5]" />
                 Report New Issue
@@ -156,35 +156,35 @@ const CitizenDashboard = () => {
           {/* Quick Metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 select-none">
             {/* Total */}
-            <div className="bg-white border border-slate-250/60 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
-              <div className="p-3 bg-slate-50 text-slate-500 rounded-xl border border-slate-100">
+            <div className="bg-white border border-[#F6C344]/20 p-5 rounded-2xl flex items-center space-x-4 shadow-[0_2px_14px_-4px_rgba(246,195,68,0.18)] hover:shadow-[0_4px_20px_-4px_rgba(246,195,68,0.28)] transition-shadow">
+              <div className="p-3 bg-[#FBF3D9] text-[#B8860B] rounded-xl border border-[#F6C344]/30">
                 <ListTodo className="h-6 w-6 stroke-[1.5]" />
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Filings</p>
-                <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{totalCount}</h3>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9C8449]">Total Filings</p>
+                <h3 className="text-xl font-extrabold text-[#3D2E10] mt-0.5">{totalCount}</h3>
               </div>
             </div>
 
             {/* Pending */}
-            <div className="bg-white border border-slate-250/60 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
-              <div className="p-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-100">
+            <div className="bg-white border border-[#F6C344]/20 p-5 rounded-2xl flex items-center space-x-4 shadow-[0_2px_14px_-4px_rgba(246,195,68,0.18)] hover:shadow-[0_4px_20px_-4px_rgba(246,195,68,0.28)] transition-shadow">
+              <div className="p-3 bg-[#FBF3D9] text-[#D9A62B] rounded-xl border border-[#F6C344]/30">
                 <Clock className="h-6 w-6 stroke-[1.5]" />
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Pending Resolution</p>
-                <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{pendingCount}</h3>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9C8449]">Pending Resolution</p>
+                <h3 className="text-xl font-extrabold text-[#3D2E10] mt-0.5">{pendingCount}</h3>
               </div>
             </div>
 
             {/* Resolved */}
-            <div className="bg-white border border-slate-250/60 p-5 rounded-2xl flex items-center space-x-4 shadow-sm">
+            <div className="bg-white border border-[#F6C344]/20 p-5 rounded-2xl flex items-center space-x-4 shadow-[0_2px_14px_-4px_rgba(246,195,68,0.18)] hover:shadow-[0_4px_20px_-4px_rgba(246,195,68,0.28)] transition-shadow">
               <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
                 <CheckSquare className="h-6 w-6 stroke-[1.5]" />
               </div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Resolved Issues</p>
-                <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">{resolvedCount}</h3>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9C8449]">Resolved Issues</p>
+                <h3 className="text-xl font-extrabold text-[#3D2E10] mt-0.5">{resolvedCount}</h3>
               </div>
             </div>
           </div>
@@ -193,10 +193,10 @@ const CitizenDashboard = () => {
             {/* Map Preview & Recent reports lists */}
             <div className="lg:col-span-2 space-y-6">
               {/* Map Preview Container */}
-              <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-4">
+              <div className="bg-white border border-[#F6C344]/20 p-5 rounded-2xl shadow-[0_2px_14px_-4px_rgba(246,195,68,0.18)] space-y-4">
                 <div className="flex items-center space-x-2">
-                  <MapPin className="h-5 w-5 text-accent-500 stroke-[2.5]" />
-                  <h4 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Your Reported Area Map</h4>
+                  <MapPin className="h-5 w-5 text-[#D9A62B] stroke-[2.5]" />
+                  <h4 className="font-extrabold text-xs text-[#3D2E10] uppercase tracking-wider">Your Reported Area Map</h4>
                 </div>
                 {!loading && complaints.length > 0 ? (
                   <Map 
@@ -206,7 +206,7 @@ const CitizenDashboard = () => {
                     height="280px"
                   />
                 ) : (
-                  <div className="h-[280px] bg-slate-50 border border-slate-200/50 rounded-2xl flex items-center justify-center text-slate-400 text-xs font-semibold">
+                  <div className="h-[280px] bg-[#FFFBEF] border border-[#F6C344]/20 rounded-2xl flex items-center justify-center text-[#B8A276] text-xs font-semibold">
                     No active complaint coordinates available to display.
                   </div>
                 )}
@@ -214,8 +214,8 @@ const CitizenDashboard = () => {
 
               {/* Complaints Registry */}
               <div>
-                <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-4 flex items-center">
-                  <ShieldCheck className="h-4.5 w-4.5 text-accent-500 mr-2 stroke-[2.5]" />
+                <h3 className="text-xs font-extrabold text-[#3D2E10] uppercase tracking-wider mb-4 flex items-center">
+                  <ShieldCheck className="h-4.5 w-4.5 text-[#D9A62B] mr-2 stroke-[2.5]" />
                   Your Filed Complaints Registry
                 </h3>
 
@@ -224,8 +224,8 @@ const CitizenDashboard = () => {
                     onClick={() => setViewMode("my")}
                     className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
                       viewMode === "my"
-                        ? "bg-accent-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        ? "bg-[#F6C344] text-[#4A3705] shadow-sm shadow-[#F6C344]/40"
+                        : "bg-[#FBF3D9] text-[#9C8449] hover:bg-[#F6E9BE]"
                     }`}
                   >
                     My Complaints
@@ -235,8 +235,8 @@ const CitizenDashboard = () => {
                     onClick={() => setViewMode("community")}
                     className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
                       viewMode === "community"
-                        ? "bg-accent-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        ? "bg-[#F6C344] text-[#4A3705] shadow-sm shadow-[#F6C344]/40"
+                        : "bg-[#FBF3D9] text-[#9C8449] hover:bg-[#F6E9BE]"
                     }`}
                   >
                     Community Complaints
@@ -244,23 +244,23 @@ const CitizenDashboard = () => {
                 </div>
 
                 {loading ? (
-                  <div className="bg-white rounded-2xl border border-slate-200 p-12">
+                  <div className="bg-white rounded-2xl border border-[#F6C344]/20 p-12">
                     <Loading message="Syncing complaints registry..." />
                   </div>
                 ) : error ? (
                   <Error message={error} onRetry={fetchComplaints} />
                 ) : complaints.length === 0 ? (
-                  <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center flex flex-col items-center justify-center">
-                    <div className="p-4 bg-slate-50 text-slate-400 rounded-full mb-4">
+                  <div className="bg-white rounded-2xl border border-[#F6C344]/20 p-10 text-center flex flex-col items-center justify-center shadow-[0_2px_14px_-4px_rgba(246,195,68,0.18)]">
+                    <div className="p-4 bg-[#FBF3D9] text-[#D9A62B] rounded-full mb-4">
                       <ListTodo className="h-8 w-8 stroke-[1.2]" />
                     </div>
-                    <h4 className="font-bold text-slate-900 mb-1">No civic filings reported yet</h4>
-                    <p className="text-xs text-slate-500 max-w-sm mb-6 leading-relaxed">
+                    <h4 className="font-bold text-[#3D2E10] mb-1">No civic filings reported yet</h4>
+                    <p className="text-xs text-[#9C8449] max-w-sm mb-6 leading-relaxed">
                       All your reported urban issues (potholes, streetlights, leakages) will display here for monitoring.
                     </p>
                     <Link
                       to="/citizen/raise"
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors active:scale-95 shadow-sm"
+                      className="px-4 py-2 bg-[#4A3705] hover:bg-[#5C4508] text-[#F9E8A4] text-xs font-bold rounded-xl transition-colors active:scale-95 shadow-sm"
                     >
                       File Your First Report
                     </Link>
@@ -291,53 +291,53 @@ const CitizenDashboard = () => {
             {/* Right Column: Quick actions, helpline directory */}
             <div className="space-y-6">
               {/* Quick Actions Card */}
-              <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-4">
-                <h4 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Quick Portal Actions</h4>
+              <div className="bg-white border border-[#F6C344]/20 p-5 rounded-2xl shadow-[0_2px_14px_-4px_rgba(246,195,68,0.18)] space-y-4">
+                <h4 className="font-extrabold text-xs text-[#3D2E10] uppercase tracking-wider">Quick Portal Actions</h4>
                 <div className="grid grid-cols-1 gap-2.5">
                   <Link 
                     to="/citizen/raise"
-                    className="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50 transition-colors"
+                    className="flex items-center justify-between p-3 rounded-xl border border-[#F6C344]/25 hover:border-[#F6C344]/50 bg-[#FFFBEF] hover:bg-[#FBF3D9] transition-colors"
                   >
                     <div className="flex items-center space-x-2.5">
-                      <PlusCircle className="h-4.5 w-4.5 text-accent-500" />
-                      <span className="text-xs font-bold text-slate-700">File Civic Complaint</span>
+                      <PlusCircle className="h-4.5 w-4.5 text-[#D9A62B]" />
+                      <span className="text-xs font-bold text-[#5C4A1E]">File Civic Complaint</span>
                     </div>
-                    <span className="text-[10px] font-bold text-slate-400 font-sans">&rarr;</span>
+                    <span className="text-[10px] font-bold text-[#B8A276] font-sans">&rarr;</span>
                   </Link>
 
                   <Link 
                     to="/public-complaints"
-                    className="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50 transition-colors"
+                    className="flex items-center justify-between p-3 rounded-xl border border-[#F6C344]/25 hover:border-[#F6C344]/50 bg-[#FFFBEF] hover:bg-[#FBF3D9] transition-colors"
                   >
                     <div className="flex items-center space-x-2.5">
-                      <MapPin className="h-4.5 w-4.5 text-accent-500" />
-                      <span className="text-xs font-bold text-slate-700">Browse Public Map Feed</span>
+                      <MapPin className="h-4.5 w-4.5 text-[#D9A62B]" />
+                      <span className="text-xs font-bold text-[#5C4A1E]">Browse Public Map Feed</span>
                     </div>
-                    <span className="text-[10px] font-bold text-slate-400 font-sans">&rarr;</span>
+                    <span className="text-[10px] font-bold text-[#B8A276] font-sans">&rarr;</span>
                   </Link>
                 </div>
               </div>
 
               {/* Informational Helpline */}
-              <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm space-y-4">
-                <div className="flex items-center space-x-2 text-slate-650">
-                  <HelpCircle className="h-4.5 w-4.5 text-accent-500" />
-                  <h4 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Helpline Directory</h4>
+              <div className="bg-white border border-[#F6C344]/20 p-5 rounded-2xl shadow-[0_2px_14px_-4px_rgba(246,195,68,0.18)] space-y-4">
+                <div className="flex items-center space-x-2 text-[#5C4A1E]">
+                  <HelpCircle className="h-4.5 w-4.5 text-[#D9A62B]" />
+                  <h4 className="font-extrabold text-xs text-[#3D2E10] uppercase tracking-wider">Helpline Directory</h4>
                 </div>
-                <p className="text-[11px] text-slate-550 leading-relaxed">
+                <p className="text-[11px] text-[#9C8449] leading-relaxed">
                   For active electrical shock hazards, gas leaks, or police emergencies, call the respective authorities immediately.
                 </p>
-                <div className="divide-y divide-slate-100 text-xs font-bold text-slate-700">
+                <div className="divide-y divide-[#F6C344]/15 text-xs font-bold text-[#3D2E10]">
                   <div className="py-2.5 flex justify-between">
-                    <span className="text-slate-400">Emergency Response:</span>
+                    <span className="text-[#B8A276]">Emergency Response:</span>
                     <span>112</span>
                   </div>
                   <div className="py-2.5 flex justify-between">
-                    <span className="text-slate-400">Water Board:</span>
+                    <span className="text-[#B8A276]">Water Board:</span>
                     <span>1916</span>
                   </div>
                   <div className="py-2.5 flex justify-between">
-                    <span className="text-slate-400">Electricity Helpline:</span>
+                    <span className="text-[#B8A276]">Electricity Helpline:</span>
                     <span>1912</span>
                   </div>
                 </div>

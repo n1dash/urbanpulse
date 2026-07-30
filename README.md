@@ -99,7 +99,7 @@ Municipal Commissioner (Admin)
 Every complaint moves through a well-defined lifecycle:
 
 ```
-Created
+reported
    ↓
 Verified
    ↓
@@ -257,6 +257,38 @@ npm run dev
 ```
 
 ---
+
+## Docker Deployment
+
+### Prerequisites
+- Docker
+- Docker Compose
+
+### Steps
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd UrbanPulse
+   ```
+
+2. Build and start the containers:
+   ```bash
+   docker-compose up --build
+   ```
+
+3. Open the application:
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+
+4. Stop the containers:
+   ```bash
+   docker-compose down
+   ```
+
+### Notes
+- Ensure Docker Desktop is running before starting the project.
+- Update environment variables in the `.env` file if required.
 
 ## Security Features
 

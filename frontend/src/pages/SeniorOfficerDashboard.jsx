@@ -181,9 +181,9 @@ const SeniorOfficerDashboard = () => {
       label: 'Total Complaints',
       value: totalCount,
       icon: ClipboardList,
-      iconBg: 'bg-slate-50',
-      iconColor: 'text-slate-500',
-      iconBorder: 'border-slate-100'
+      iconBg: 'bg-[#EFF4FC]',
+      iconColor: 'text-[#3B82F6]',
+      iconBorder: 'border-[#DBEAFE]'
     },
     {
       key: 'pending',
@@ -199,9 +199,9 @@ const SeniorOfficerDashboard = () => {
       label: 'In Progress',
       value: inProgressCount,
       icon: Activity,
-      iconBg: 'bg-sky-50',
-      iconColor: 'text-sky-600',
-      iconBorder: 'border-sky-100'
+      iconBg: 'bg-[#EFF4FC]',
+      iconColor: 'text-[#2563EB]',
+      iconBorder: 'border-[#DBEAFE]'
     },
     {
       key: 'resolved',
@@ -215,26 +215,26 @@ const SeniorOfficerDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-[#F7FAFF] flex">
       <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
       <Sidebar isOpen={sidebarOpen} onCloseSideBar={() => setSidebarOpen(false)} />
 
       <main className="flex-1 md:pl-64 pt-16 min-h-screen">
         <div className="p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6 md:space-y-8 animate-fade-in">
           {/* Header Greeting Section */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-2xl bg-gradient-to-r from-[#F7FAFF] via-[#EEF4FF] to-[#DBEAFE]/50 border border-[#3B82F6]/15 px-5 py-6 shadow-[0_2px_16px_-4px_rgba(59,130,246,0.18)]">
             <div className="space-y-1">
-              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-[#0F2A4A] tracking-tight">
                 {getGreeting()}, {user?.username || 'Senior Officer'} 👋
               </h2>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              <p className="text-xs font-bold text-[#6B84A3] uppercase tracking-wider">
                 Here's what's happening across your city today.
               </p>
             </div>
 
             <div className="flex items-center space-x-3 self-start sm:self-auto">
-              <span className="inline-flex items-center text-[10px] font-bold text-slate-500 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
-                <Calendar className="h-3.5 w-3.5 mr-1.5 text-slate-450 stroke-[2.5]" />
+              <span className="inline-flex items-center text-[10px] font-bold text-[#6B84A3] bg-white border border-[#3B82F6]/20 px-3 py-1.5 rounded-xl shadow-sm">
+                <Calendar className="h-3.5 w-3.5 mr-1.5 text-[#3B82F6] stroke-[2.5]" />
                 {currentFormattedDate}
               </span>
             </div>
@@ -245,36 +245,36 @@ const SeniorOfficerDashboard = () => {
             {statCards.map(({ key, label, value, icon: Icon, iconBg, iconColor, iconBorder }) => (
               <div
                 key={key}
-                className="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl flex items-center space-x-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                className="bg-white border border-[#3B82F6]/15 p-4 sm:p-5 rounded-2xl flex items-center space-x-4 shadow-[0_2px_14px_-4px_rgba(59,130,246,0.15)] hover:shadow-[0_4px_20px_-4px_rgba(59,130,246,0.25)] hover:-translate-y-0.5 transition-all duration-200"
               >
                 <div className={`p-3 ${iconBg} ${iconColor} rounded-xl border ${iconBorder} flex-shrink-0`}>
                   <Icon className="h-5 w-5 sm:h-6 sm:w-6 stroke-[1.5]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">{label}</p>
-                  <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-0.5">{value}</h3>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#6B84A3] truncate">{label}</p>
+                  <h3 className="text-lg sm:text-xl font-extrabold text-[#0F2A4A] mt-0.5">{value}</h3>
                 </div>
               </div>
             ))}
           </div>
 
           {/* Search & Filters Bar */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm">
+          <div className="bg-white border border-[#3B82F6]/15 rounded-2xl p-4 sm:p-5 shadow-[0_2px_14px_-4px_rgba(59,130,246,0.15)]">
             <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
               {/* Search input */}
               <div className="relative flex-1">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8FA3C0]" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by title, description, or location..."
-                  className="w-full pl-10 pr-9 py-2.5 text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-xl placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-accent-500/30 focus:border-accent-400 transition-colors"
+                  className="w-full pl-10 pr-9 py-2.5 text-sm font-medium text-[#0F2A4A] bg-[#F7FAFF] border border-[#3B82F6]/20 rounded-xl placeholder:text-[#8FA3C0] placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/25 focus:border-[#3B82F6] transition-colors"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8FA3C0] hover:text-[#3B82F6]"
                     aria-label="Clear search"
                   >
                     <X className="h-4 w-4" />
@@ -284,11 +284,11 @@ const SeniorOfficerDashboard = () => {
 
               {/* Priority filter */}
               <div className="flex items-center gap-2 sm:w-auto">
-                <SlidersHorizontal className="hidden sm:block h-4 w-4 text-slate-400 flex-shrink-0" />
+                <SlidersHorizontal className="hidden sm:block h-4 w-4 text-[#8FA3C0] flex-shrink-0" />
                 <select
                   value={priorityFilter}
                   onChange={(e) => setPriorityFilter(e.target.value)}
-                  className="flex-1 lg:flex-none text-xs sm:text-sm font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent-500/30 focus:border-accent-400 transition-colors cursor-pointer"
+                  className="flex-1 lg:flex-none text-xs sm:text-sm font-semibold text-[#0F2A4A] bg-[#F7FAFF] border border-[#3B82F6]/20 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/25 focus:border-[#3B82F6] transition-colors cursor-pointer"
                 >
                   {PRIORITY_OPTIONS.map((option) => (
                     <option key={option} value={option}>
@@ -303,7 +303,7 @@ const SeniorOfficerDashboard = () => {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="flex-1 lg:flex-none text-xs sm:text-sm font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent-500/30 focus:border-accent-400 transition-colors cursor-pointer"
+                  className="flex-1 lg:flex-none text-xs sm:text-sm font-semibold text-[#0F2A4A] bg-[#F7FAFF] border border-[#3B82F6]/20 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/25 focus:border-[#3B82F6] transition-colors cursor-pointer"
                 >
                   {statusOptions.map((option) => (
                     <option key={option} value={option}>
@@ -316,7 +316,7 @@ const SeniorOfficerDashboard = () => {
               {hasActiveFilters && (
                 <button
                   onClick={clearFilters}
-                  className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-200 bg-slate-50 hover:bg-rose-50 rounded-xl px-3.5 py-2.5 transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-[#6B84A3] hover:text-rose-600 border border-[#3B82F6]/20 hover:border-rose-200 bg-[#F7FAFF] hover:bg-rose-50 rounded-xl px-3.5 py-2.5 transition-colors"
                 >
                   <X className="h-3.5 w-3.5" />
                   Clear
@@ -328,33 +328,33 @@ const SeniorOfficerDashboard = () => {
           {/* Complaint List */}
           <div>
             {loading ? (
-              <div className="bg-white rounded-2xl border border-slate-200 p-12">
+              <div className="bg-white rounded-2xl border border-[#3B82F6]/15 p-12">
                 <Loading message="Compiling department complaint records..." />
               </div>
             ) : error ? (
               <Error message={error} onRetry={fetchDepartmentComplaints} />
             ) : complaints.length === 0 ? (
-              <div className="bg-white border border-slate-200 rounded-2xl p-12 sm:p-16 flex flex-col items-center text-center">
-                <div className="p-4 bg-slate-50 text-slate-300 rounded-2xl border border-slate-100 mb-4">
+              <div className="bg-white border border-[#3B82F6]/15 rounded-2xl p-12 sm:p-16 flex flex-col items-center text-center shadow-[0_2px_14px_-4px_rgba(59,130,246,0.15)]">
+                <div className="p-4 bg-[#EFF4FC] text-[#8FA3C0] rounded-2xl border border-[#DBEAFE] mb-4">
                   <Inbox className="h-8 w-8 stroke-[1.5]" />
                 </div>
-                <h4 className="text-sm font-extrabold text-slate-700">No complaints registered yet</h4>
-                <p className="text-xs font-semibold text-slate-400 mt-1.5 max-w-sm">
+                <h4 className="text-sm font-extrabold text-[#0F2A4A]">No complaints registered yet</h4>
+                <p className="text-xs font-semibold text-[#6B84A3] mt-1.5 max-w-sm">
                   New complaints filed for your department will show up here as soon as they arrive.
                 </p>
               </div>
             ) : filteredComplaints.length === 0 ? (
-              <div className="bg-white border border-slate-200 rounded-2xl p-12 sm:p-16 flex flex-col items-center text-center">
-                <div className="p-4 bg-slate-50 text-slate-300 rounded-2xl border border-slate-100 mb-4">
+              <div className="bg-white border border-[#3B82F6]/15 rounded-2xl p-12 sm:p-16 flex flex-col items-center text-center shadow-[0_2px_14px_-4px_rgba(59,130,246,0.15)]">
+                <div className="p-4 bg-[#EFF4FC] text-[#8FA3C0] rounded-2xl border border-[#DBEAFE] mb-4">
                   <FileSearch className="h-8 w-8 stroke-[1.5]" />
                 </div>
-                <h4 className="text-sm font-extrabold text-slate-700">No complaints match your filters</h4>
-                <p className="text-xs font-semibold text-slate-400 mt-1.5 max-w-sm">
+                <h4 className="text-sm font-extrabold text-[#0F2A4A]">No complaints match your filters</h4>
+                <p className="text-xs font-semibold text-[#6B84A3] mt-1.5 max-w-sm">
                   Try adjusting your search term or resetting the priority and status filters.
                 </p>
                 <button
                   onClick={clearFilters}
-                  className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-accent-700 bg-accent-50 hover:bg-accent-100 border border-accent-100 rounded-xl px-4 py-2 transition-colors"
+                  className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-[#1D4ED8] bg-[#EFF4FC] hover:bg-[#DBEAFE] border border-[#DBEAFE] rounded-xl px-4 py-2 transition-colors"
                 >
                   <X className="h-3.5 w-3.5" />
                   Clear all filters
@@ -362,7 +362,7 @@ const SeniorOfficerDashboard = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">
+                <p className="text-xs font-bold text-[#6B84A3] uppercase tracking-wider px-1">
                   Showing {filteredComplaints.length} of {totalCount} complaint{totalCount !== 1 ? 's' : ''}
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
